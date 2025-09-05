@@ -532,13 +532,10 @@
             async function trackVisit() {
                 const analyticsRef = doc(db, "analytics", "main");
                 try {
-                    // This structure is not optimal for scaling.
-                    // For a real app, use Cloud Functions to aggregate daily/monthly data.
                     const docSnap = await getDoc(analyticsRef);
                     if (docSnap.exists()) {
                         let timestamps = docSnap.data().visitTimestamps || [];
-                        timestamps.push(new Date());
-                        // Keep only the last N timestamps to avoid document size issues
+                        timestamps.push(serverTimestamp());
                         if (timestamps.length > 500) {
                             timestamps = timestamps.slice(timestamps.length - 500);
                         }
@@ -551,7 +548,7 @@
                             totalVisits: 1, 
                             totalSessionTime: 0, 
                             sessionCount: 0,
-                            visitTimestamps: [new Date()]
+                            visitTimestamps: [serverTimestamp()]
                         });
                     }
                 } catch (e) {
@@ -664,7 +661,7 @@
                     await setDoc(doc(db, "users", user.uid), {
                         email: user.email,
                         role: 'superAdmin',
-                        createdAt: serverTimestamp ? serverTimestamp() : new Date()
+                        createdAt: serverTimestamp()
                     });
                     errorP.textContent = '';
                 } catch (error) {
@@ -1020,7 +1017,6 @@
             });
 
             mainApp();
-    });
     </script>
 </body>
 </html>
