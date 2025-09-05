@@ -341,14 +341,14 @@
         
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
         import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, updateDoc, increment, collection, getDocs, serverTimestamp, query, where, deleteDoc } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, increment, collection, getDocs, serverTimestamp, query, where, deleteDoc, addDoc } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
+        
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
 
         // This listener ensures the entire DOM is ready before any script logic runs.
         document.addEventListener('DOMContentLoaded', function() {
-            // Initialize Firebase
-            const app = initializeApp(firebaseConfig);
-            const auth = getAuth(app);
-            const db = getFirestore(app);
             
             // --- Main App Logic ---
             const contentData = {
@@ -529,28 +529,23 @@
                 // --- Analytics Logic ---
                 async function trackVisit() {
                     const analyticsRef = doc(db, "analytics", "main");
+                    const visitsColRef = collection(db, "analytics/main/visits");
                     try {
-                        const docSnap = await getDoc(analyticsRef);
-                        if (docSnap.exists()) {
-                            let timestamps = docSnap.data().visitTimestamps || [];
-                            timestamps.push(serverTimestamp());
-                            if (timestamps.length > 500) {
-                                timestamps = timestamps.slice(timestamps.length - 500);
-                            }
-                            await updateDoc(analyticsRef, {
-                                totalVisits: increment(1),
-                                visitTimestamps: timestamps
-                            });
-                        } else {
-                             await setDoc(analyticsRef, { 
+                        // Increment total visits
+                        await setDoc(analyticsRef, { totalVisits: increment(1) }, { merge: true });
+                        // Add a new document for this specific visit
+                        await addDoc(visitsColRef, { timestamp: serverTimestamp() });
+                    } catch (e) {
+                         console.error("Error tracking visit:", e);
+                         // Attempt to create the main analytics doc if it doesn't exist
+                         if (e.code === 'not-found' || e.message.includes('No document to update')) {
+                            await setDoc(analyticsRef, { 
                                 totalVisits: 1, 
                                 totalSessionTime: 0, 
                                 sessionCount: 0,
-                                visitTimestamps: [serverTimestamp()]
                             });
-                        }
-                    } catch (e) {
-                         console.error("Error tracking visit:", e);
+                            await addDoc(visitsColRef, { timestamp: serverTimestamp() });
+                         }
                     }
                 }
                 
@@ -558,10 +553,10 @@
                     const duration = Math.round((Date.now() - sessionStartTime) / 1000); // in seconds
                     const analyticsRef = doc(db, "analytics/main");
                     try {
-                         await updateDoc(analyticsRef, {
+                         await setDoc(analyticsRef, {
                             totalSessionTime: increment(duration),
                             sessionCount: increment(1)
-                        });
+                        }, { merge: true });
                     } catch (e) {
                         console.error("Error tracking session duration:", e);
                     }
@@ -717,7 +712,7 @@
                     }
                     
                     try {
-                        await setDoc(doc(collection(db, "invitations")), {
+                        await addDoc(collection(db, "invitations"), {
                             email: email,
                             role: 'admin',
                             invitedBy: auth.currentUser.uid,
@@ -744,9 +739,9 @@
                         const avgTime = (data.sessionCount > 0) ? (data.totalSessionTime / data.sessionCount).toFixed(1) : 0;
                         document.getElementById('stats-avg-time').textContent = avgTime;
     
-                        const allTimestamps = data.visitTimestamps && Array.isArray(data.visitTimestamps) 
-                            ? data.visitTimestamps.map(ts => ts.toDate ? ts.toDate() : new Date(ts.seconds * 1000)) 
-                            : [];
+                        const visitsColRef = collection(db, "analytics/main/visits");
+                        const visitsSnapshot = await getDocs(visitsColRef);
+                        const allTimestamps = visitsSnapshot.docs.map(d => d.data().timestamp.toDate());
                         
                         renderCharts(allTimestamps);
                     }
@@ -1067,5 +1062,4 @@
     </script>
 </body>
 </html>
-
 
