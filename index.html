@@ -213,10 +213,11 @@
                 <div id="user-management-section" class="hidden mt-8 pt-6 border-t border-slate-200">
                     <h3 class="text-xl font-bold text-slate-800 mb-4">Gestión de Usuarios</h3>
                     <div class="bg-slate-50 p-4 rounded-lg">
-                        <h4 class="font-semibold mb-2">Añadir Nuevo Administrador</h4>
+                        <h4 class="font-semibold mb-2">Invitar a un Nuevo Administrador</h4>
+                        <p class="text-sm text-slate-600 mb-3">El usuario recibirá una invitación para registrarse. Solo podrán registrarse las cuentas invitadas.</p>
                         <div class="flex flex-col sm:flex-row gap-2">
                             <input type="email" id="new-admin-email" placeholder="Email del nuevo admin" class="flex-grow p-2 border border-slate-300 rounded-lg">
-                            <button id="add-admin-button" class="gemini-btn font-bold py-2 px-4 rounded-lg">Añadir</button>
+                            <button id="add-admin-button" class="gemini-btn font-bold py-2 px-4 rounded-lg">Invitar</button>
                         </div>
                          <p id="add-admin-feedback" class="text-sm mt-2"></p>
                     </div>
@@ -310,7 +311,7 @@
                     <p id="login-error" class="text-red-500 text-sm"></p>
                     <button id="login-button" class="w-full gemini-btn font-bold py-2 px-4 rounded-lg">Iniciar Sesión</button>
                 </div>
-                <p class="text-center text-sm mt-4">¿No tienes cuenta? <button id="show-register-view" class="font-medium text-teal-600 hover:text-teal-500">Regístrate</button></p>
+                <p class="text-center text-sm mt-4">¿No tienes cuenta? <button id="show-register-view" class="font-medium text-teal-600 hover:text-teal-500">Regístrate (requiere invitación)</button></p>
             </div>
 
             <!-- Register View -->
@@ -318,7 +319,7 @@
                  <h3 class="text-xl font-bold mb-4">Registro de Administrador</h3>
                  <p id="register-info" class="text-sm text-slate-600 mb-4"></p>
                 <div class="space-y-4">
-                    <div><label for="register-email" class="block text-sm font-medium text-slate-700">Email</label><input type="email" id="register-email" class="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm"></div>
+                    <div><label for="register-email" class="block text-sm font-medium text-slate-700">Email (debe ser el invitado)</label><input type="email" id="register-email" class="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm"></div>
                     <div><label for="register-password" class="block text-sm font-medium text-slate-700">Contraseña</label><input type="password" id="register-password" class="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm"></div>
                     <p id="register-error" class="text-red-500 text-sm"></p>
                     <button id="register-button" class="w-full gemini-btn font-bold py-2 px-4 rounded-lg">Registrar</button>
@@ -345,7 +346,7 @@
         
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
         import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, updateDoc, increment, collection, getDocs, serverTimestamp, query, where } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, increment, collection, getDocs, serverTimestamp, query, where, deleteDoc } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
 
         // Initialize Firebase
         const app = initializeApp(firebaseConfig);
@@ -588,18 +589,14 @@
             showRegisterBtn.addEventListener('click', async () => {
                 loginView.classList.add('hidden');
                 registerView.classList.remove('hidden');
-                
+                document.getElementById('register-info').textContent = "Regístrate aquí si has recibido una invitación de un administrador.";
+
+                // Check if any admin exists to determine if this is the first registration ever
                 const usersCol = collection(db, "users");
-                const q = query(usersCol, where("role", "in", ["admin", "superAdmin"]));
+                const q = query(usersCol, where("role", "in", ["superAdmin"]));
                 const querySnapshot = await getDocs(q);
-                const registerInfo = document.getElementById('register-info');
-                
-                if (querySnapshot.empty) {
-                    registerInfo.textContent = "¡Bienvenido! Serás el primer administrador (Super Admin) de la aplicación.";
-                    document.getElementById('register-button').disabled = false;
-                } else {
-                    registerInfo.textContent = "El registro está deshabilitado. Un Super Admin debe invitarte.";
-                    document.getElementById('register-button').disabled = true;
+                 if (querySnapshot.empty) {
+                    document.getElementById('register-info').textContent += " ¡Parece que serás el primer Super Administrador!";
                 }
             });
             showLoginBtn.addEventListener('click', () => {
@@ -619,6 +616,8 @@
                         dashboardNavItem.classList.remove('hidden');
                         if(userDoc.data().role === 'superAdmin') {
                             userManagementSection.classList.remove('hidden');
+                        } else {
+                            userManagementSection.classList.add('hidden');
                         }
                         modal.classList.add('hidden');
                         document.querySelector('.nav-btn[data-target="dashboard"]').click();
@@ -629,7 +628,7 @@
                 } else {
                     dashboardNavItem.classList.add('hidden');
                     userManagementSection.classList.add('hidden');
-                    if(document.querySelector('.nav-btn.active').getAttribute('data-target') === 'dashboard') {
+                    if(document.querySelector('.nav-btn.active')?.getAttribute('data-target') === 'dashboard') {
                        document.querySelector('.nav-btn[data-target="custom-equation"]').click();
                     }
                 }
@@ -643,8 +642,8 @@
                 const password = document.getElementById('login-password').value;
                 const errorP = document.getElementById('login-error');
                 try {
-                    await signInWithEmailAndPassword(auth, email, password);
                     errorP.textContent = '';
+                    await signInWithEmailAndPassword(auth, email, password);
                 } catch (error) {
                     errorP.textContent = "Error: " + error.message;
                 }
@@ -655,17 +654,53 @@
                 const email = document.getElementById('register-email').value;
                 const password = document.getElementById('register-password').value;
                 const errorP = document.getElementById('register-error');
-                 try {
+                errorP.textContent = '';
+
+                try {
+                    // Check if user is the first ever, or is invited
+                    const usersCol = collection(db, "users");
+                    const adminQuery = query(usersCol, where("role", "in", ["superAdmin"]));
+                    const adminSnapshot = await getDocs(adminQuery);
+                    let role = 'admin'; // Default role for invited user
+                    let isFirstAdmin = adminSnapshot.empty;
+                    
+                    if (isFirstAdmin) {
+                        role = 'superAdmin';
+                    } else {
+                        const invitationsCol = collection(db, "invitations");
+                        const inviteQuery = query(invitationsCol, where("email", "==", email));
+                        const inviteSnapshot = await getDocs(inviteQuery);
+                        if (inviteSnapshot.empty) {
+                            throw new Error("auth/no-invitation");
+                        }
+                    }
+
                     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
                     const user = userCredential.user;
+
+                    // Create user document
                     await setDoc(doc(db, "users", user.uid), {
                         email: user.email,
-                        role: 'superAdmin',
+                        role: role,
                         createdAt: serverTimestamp()
                     });
-                    errorP.textContent = '';
+
+                    // Delete invitation if it exists
+                    if (!isFirstAdmin) {
+                        const invitationsCol = collection(db, "invitations");
+                        const inviteQuery = query(invitationsCol, where("email", "==", email));
+                        const inviteSnapshot = await getDocs(inviteQuery);
+                        inviteSnapshot.forEach(async (inviteDoc) => {
+                            await deleteDoc(doc(db, "invitations", inviteDoc.id));
+                        });
+                    }
+
                 } catch (error) {
-                    errorP.textContent = "Error: " + error.message;
+                     if(error.message === "auth/no-invitation") {
+                        errorP.textContent = "Error: No tienes una invitación para registrarte.";
+                    } else {
+                        errorP.textContent = "Error: " + error.message;
+                    }
                 }
             });
             
@@ -683,8 +718,22 @@
                     feedbackP.className = 'text-sm mt-2 text-red-500';
                     return;
                 }
-                feedbackP.textContent = 'Funcionalidad de invitación simplificada. En una app real, esto enviaría un email. Por ahora, el usuario debe registrarse con este email para ser admin (funcionalidad no implementada).';
-                feedbackP.className = 'text-sm mt-2 text-orange-500';
+                
+                try {
+                    await setDoc(doc(collection(db, "invitations")), {
+                        email: email,
+                        role: 'admin',
+                        invitedBy: auth.currentUser.uid,
+                        createdAt: serverTimestamp()
+                    });
+                    feedbackP.textContent = `Invitación enviada a ${email}. Ahora pueden registrarse.`;
+                    feedbackP.className = 'text-sm mt-2 text-green-600';
+                    document.getElementById('new-admin-email').value = '';
+                } catch (e) {
+                    feedbackP.textContent = 'Error al enviar la invitación.';
+                    feedbackP.className = 'text-sm mt-2 text-red-500';
+                    console.error("Error adding invitation: ", e);
+                }
              });
 
             // --- Dashboard Logic ---
@@ -1017,7 +1066,9 @@
             });
 
             mainApp();
+    });
     </script>
 </body>
 </html>
+
 
