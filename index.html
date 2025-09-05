@@ -329,33 +329,30 @@
     </div>
 
 
-    <!-- Firebase SDKs -->
+    <!-- Main App Script -->
     <script type="module">
         // --- ⚠️ CRITICAL FIREBASE CONFIGURATION ---
-const firebaseConfig = {
-  apiKey: "AIzaSyAQwVCW_8l0fiNgdb7ZrgsIhFYRhnVDJoU",
-  authDomain: "cetiestudiantes-51dbf.firebaseapp.com",
-  projectId: "cetiestudiantes-51dbf",
-  storageBucket: "cetiestudiantes-51dbf.firebasestorage.app",
-  messagingSenderId: "571802127445",
-  appId: "1:571802127445:web:a07a7b60cbb520d7ec18dc",
-  measurementId: "G-8J41RMPB6Q"
-};
+        const firebaseConfig = {
+          apiKey: "AIzaSyAQwVCW_8l0fiNgdb7ZrgsIhFYRhnVDJoU",
+          authDomain: "cetiestudiantes-51dbf.firebaseapp.com",
+          projectId: "cetiestudiantes-51dbf",
+          storageBucket: "cetiestudiantes-51dbf.appspot.com",
+          messagingSenderId: "571802127445",
+          appId: "1:571802127445:web:a07a7b60cbb520d7ec18dc",
+          measurementId: "G-8J41RMPB6Q"
+        };
         // ---------------------------------------------
         
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
         import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc, updateDoc, increment, collection, getDocs, serverTimestamp, query, where } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
 
+        // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
         
-        window.firebase = { auth, db, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, doc, getDoc, setDoc, updateDoc, increment, collection, getDocs, serverTimestamp, query, where };
-    </script>
-    
-    <script>
-    document.addEventListener('DOMContentLoaded', function() {
+        // --- Main App Logic ---
         const contentData = {
                 separables: {
                     name: "Variables Separables",
@@ -394,14 +391,14 @@ const firebaseConfig = {
                     name: "Lineales",
                     title: "4. Ecuaciones Lineales",
                     description: `Estas ecuaciones tienen una estructura muy definida. Se resuelven con un "factor integrante" que las hace fácilmente integrables.`,
-                    content: `<h3 class="text-xl font-semibold mb-2">Identificación (Forma Estándar)</h3><div class="formula-block mb-6">$$ \\frac{dy}{dx} + P(x)y = Q(x) $$</div><h3 class="text-xl font-semibold mb-2">Método de Solución</h3><ol class="list-decimal list-inside space-y-4"><li><span class="font-semibold">Calcular Factor Integrante ($$\\mu$$):</span><div class="formula-block mt-2>$$\\mu(x) = e^{\\int P(x)dx}$$</div></li><li><span class="font-semibold">Aplicar fórmula de solución:</span><div class="formula-block mt-2">$$ y \\cdot \\mu(x) = \\int Q(x) \\cdot \\mu(x) dx + C $$</div></li><li><span class="font-semibold">Despejar y.</span></li></ol>`,
+                    content: `<h3 class="text-xl font-semibold mb-2">Identificación (Forma Estándar)</h3><div class="formula-block mb-6">$$ \\frac{dy}{dx} + P(x)y = Q(x) $$</div><h3 class="text-xl font-semibold mb-2">Método de Solución</h3><ol class="list-decimal list-inside space-y-4"><li><span class="font-semibold">Calcular Factor Integrante ($$\\mu$$):</span><div class="formula-block mt-2">$$\\mu(x) = e^{\\int P(x)dx}$$</div></li><li><span class="font-semibold">Aplicar fórmula de solución:</span><div class="formula-block mt-2">$$ y \\cdot \\mu(x) = \\int Q(x) \\cdot \\mu(x) dx + C $$</div></li><li><span class="font-semibold">Despejar y.</span></li></ol>`,
                     prompt: "Genera un ejemplo de una ecuación diferencial lineal de primer orden en la forma dy/dx + P(x)y = Q(x). Proporciona solo la ecuación. Usa funciones P(x) y Q(x) que sean integrables. Usa delimitadores de $$ para la matemática."
                 },
                 bernoulli: {
                     name: "de Bernoulli",
                     title: "5. Ecuación de Bernoulli",
                     description: "Son ecuaciones no lineales que se parecen mucho a las lineales. Una sustitución inteligente las transforma en una ecuación lineal que ya sabemos resolver.",
-                    content: `<h3 class="text-xl font-semibold mb-2">Identificación</h3><div class="formula-block mb-6">$$ \\frac{dy}{dx} + P(x)y = Q(x)y^n $$</div><h3 class="text-xl font-semibold mb-2">Método de Solución</h3><ol class="list-decimal list-inside space-y-4"><li><span class="font-semibold">Sustitución clave:</span><div class="formula-block mt-2">$$ v = y^{1-n} $$</div></li><li><span class="font-semibold">Transformar a ecuación lineal:</span><div class="formula-block mt-2>$$ \\frac{dv}{dx} + (1-n)P(x)v = (1-n)Q(x) $$</div></li><li><span class="font-semibold">Resolver la ecuación lineal para 'v'.</span></li><li><span class="font-semibold">Revertir la sustitución.</span></li></ol>`,
+                    content: `<h3 class="text-xl font-semibold mb-2">Identificación</h3><div class="formula-block mb-6">$$ \\frac{dy}{dx} + P(x)y = Q(x)y^n $$</div><h3 class="text-xl font-semibold mb-2">Método de Solución</h3><ol class="list-decimal list-inside space-y-4"><li><span class="font-semibold">Sustitución clave:</span><div class="formula-block mt-2">$$ v = y^{1-n} $$</div></li><li><span class="font-semibold">Transformar a ecuación lineal:</span><div class="formula-block mt-2">$$ \\frac{dv}{dx} + (1-n)P(x)v = (1-n)Q(x) $$</div></li><li><span class="font-semibold">Resolver la ecuación lineal para 'v'.</span></li><li><span class="font-semibold">Revertir la sustitución.</span></li></ol>`,
                     prompt: "Genera un ejemplo de una ecuación de Bernoulli de primer orden en la forma dy/dx + P(x)y = Q(x)y^n, donde n no es 0 ni 1. Proporciona solo la ecuación. Usa delimitadores de $$ para la matemática."
                 },
                 coeficientes: {
@@ -504,12 +501,11 @@ const firebaseConfig = {
             }
 
             // --- App Initialization ---
-            const firebase = window.firebase;
             let sessionStartTime = Date.now();
             let visitsByDayChart, visitsByMonthChart;
 
 
-            function initializeApp() {
+            function mainApp() {
                 // UI Setup
                 document.querySelector('.nav-btn[data-target="custom-equation"]').click();
                 renderMath(document.body);
@@ -519,7 +515,7 @@ const firebaseConfig = {
                     document.getElementById('api-key-alert').classList.remove('hidden');
                     document.querySelectorAll('.gemini-btn').forEach(btn => btn.disabled = true);
                 }
-                if (!firebase || firebase.db.app.options.apiKey === "TU_API_KEY_DE_FIREBASE") {
+                if (!app.options.apiKey || app.options.apiKey === "TU_API_KEY_DE_FIREBASE") {
                      document.getElementById('firebase-config-alert').classList.remove('hidden');
                      document.getElementById('profile-button').disabled = true;
                 }
@@ -529,40 +525,47 @@ const firebaseConfig = {
                 window.addEventListener('beforeunload', trackSessionDuration);
 
                 // Auth
-                firebase.onAuthStateChanged(firebase.auth, handleAuthStateChange);
+                onAuthStateChanged(auth, handleAuthStateChange);
             }
 
             // --- Analytics Logic ---
             async function trackVisit() {
-                if (!firebase) return;
-                const analyticsRef = firebase.doc(firebase.db, "analytics/main");
+                const analyticsRef = doc(db, "analytics", "main");
                 try {
-                    await firebase.updateDoc(analyticsRef, {
-                        totalVisits: firebase.increment(1),
-                        visitsByDay: firebase.increment(1), // Simple daily counter for now
-                        visitTimestamps: (firebase.serverTimestamp ? firebase.serverTimestamp() : new Date())
-                    });
-                } catch (e) {
-                     // If doc doesn't exist, create it
-                    if (e.code === 'not-found') {
-                        await firebase.setDoc(analyticsRef, { 
+                    // This structure is not optimal for scaling.
+                    // For a real app, use Cloud Functions to aggregate daily/monthly data.
+                    const docSnap = await getDoc(analyticsRef);
+                    if (docSnap.exists()) {
+                        let timestamps = docSnap.data().visitTimestamps || [];
+                        timestamps.push(new Date());
+                        // Keep only the last N timestamps to avoid document size issues
+                        if (timestamps.length > 500) {
+                            timestamps = timestamps.slice(timestamps.length - 500);
+                        }
+                        await updateDoc(analyticsRef, {
+                            totalVisits: increment(1),
+                            visitTimestamps: timestamps
+                        });
+                    } else {
+                         await setDoc(analyticsRef, { 
                             totalVisits: 1, 
                             totalSessionTime: 0, 
                             sessionCount: 0,
                             visitTimestamps: [new Date()]
                         });
                     }
+                } catch (e) {
+                     console.error("Error tracking visit:", e);
                 }
             }
             
             async function trackSessionDuration() {
-                 if (!firebase) return;
                 const duration = Math.round((Date.now() - sessionStartTime) / 1000); // in seconds
-                const analyticsRef = firebase.doc(firebase.db, "analytics/main");
+                const analyticsRef = doc(db, "analytics/main");
                 try {
-                     await firebase.updateDoc(analyticsRef, {
-                        totalSessionTime: firebase.increment(duration),
-                        sessionCount: firebase.increment(1)
+                     await updateDoc(analyticsRef, {
+                        totalSessionTime: increment(duration),
+                        sessionCount: increment(1)
                     });
                 } catch (e) {
                     console.error("Error tracking session duration:", e);
@@ -584,16 +587,19 @@ const firebaseConfig = {
             profileBtn.addEventListener('click', () => modal.classList.remove('hidden'));
             closeModalBtn.addEventListener('click', () => modal.classList.add('hidden'));
             modalOverlay.addEventListener('click', () => modal.classList.add('hidden'));
+            
             showRegisterBtn.addEventListener('click', async () => {
                 loginView.classList.add('hidden');
                 registerView.classList.remove('hidden');
-                // Check if any admin exists to toggle register info
-                const usersCol = firebase.collection(firebase.db, "users");
-                const q = firebase.query(usersCol, firebase.where("role", "in", ["admin", "superAdmin"]));
-                const querySnapshot = await firebase.getDocs(q);
+                
+                const usersCol = collection(db, "users");
+                const q = query(usersCol, where("role", "in", ["admin", "superAdmin"]));
+                const querySnapshot = await getDocs(q);
                 const registerInfo = document.getElementById('register-info');
+                
                 if (querySnapshot.empty) {
                     registerInfo.textContent = "¡Bienvenido! Serás el primer administrador (Super Admin) de la aplicación.";
+                    document.getElementById('register-button').disabled = false;
                 } else {
                     registerInfo.textContent = "El registro está deshabilitado. Un Super Admin debe invitarte.";
                     document.getElementById('register-button').disabled = true;
@@ -610,8 +616,8 @@ const firebaseConfig = {
                 const userManagementSection = document.getElementById('user-management-section');
 
                 if (user) {
-                    const userDocRef = firebase.doc(firebase.db, "users", user.uid);
-                    const userDoc = await firebase.getDoc(userDocRef);
+                    const userDocRef = doc(db, "users", user.uid);
+                    const userDoc = await getDoc(userDocRef);
                     if (userDoc.exists() && (userDoc.data().role === 'admin' || userDoc.data().role === 'superAdmin')) {
                         dashboardNavItem.classList.remove('hidden');
                         if(userDoc.data().role === 'superAdmin') {
@@ -621,14 +627,14 @@ const firebaseConfig = {
                         document.querySelector('.nav-btn[data-target="dashboard"]').click();
                         loadDashboardData();
                     } else {
-                        // User is not an admin, log them out
-                        await firebase.signOut(firebase.auth);
+                        await signOut(auth);
                     }
                 } else {
-                    // No user logged in
                     dashboardNavItem.classList.add('hidden');
                     userManagementSection.classList.add('hidden');
-                    document.querySelector('.nav-btn[data-target="custom-equation"]').click();
+                    if(document.querySelector('.nav-btn.active').getAttribute('data-target') === 'dashboard') {
+                       document.querySelector('.nav-btn[data-target="custom-equation"]').click();
+                    }
                 }
             }
 
@@ -640,7 +646,7 @@ const firebaseConfig = {
                 const password = document.getElementById('login-password').value;
                 const errorP = document.getElementById('login-error');
                 try {
-                    await firebase.signInWithEmailAndPassword(firebase.auth, email, password);
+                    await signInWithEmailAndPassword(auth, email, password);
                     errorP.textContent = '';
                 } catch (error) {
                     errorP.textContent = "Error: " + error.message;
@@ -653,13 +659,12 @@ const firebaseConfig = {
                 const password = document.getElementById('register-password').value;
                 const errorP = document.getElementById('register-error');
                  try {
-                    const userCredential = await firebase.createUserWithEmailAndPassword(firebase.auth, email, password);
+                    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
                     const user = userCredential.user;
-                    // Set role to superAdmin, as this is the first user
-                    await firebase.setDoc(firebase.doc(firebase.db, "users", user.uid), {
+                    await setDoc(doc(db, "users", user.uid), {
                         email: user.email,
                         role: 'superAdmin',
-                        createdAt: firebase.serverTimestamp ? firebase.serverTimestamp() : new Date()
+                        createdAt: serverTimestamp ? serverTimestamp() : new Date()
                     });
                     errorP.textContent = '';
                 } catch (error) {
@@ -669,7 +674,7 @@ const firebaseConfig = {
             
             const logoutBtn = document.getElementById('logout-button');
             logoutBtn.addEventListener('click', async () => {
-                await firebase.signOut(firebase.auth);
+                await signOut(auth);
             });
 
              const addAdminBtn = document.getElementById('add-admin-button');
@@ -681,18 +686,14 @@ const firebaseConfig = {
                     feedbackP.className = 'text-sm mt-2 text-red-500';
                     return;
                 }
-                // This is a simplified "invitation". In a real app, you'd send an email.
-                // Here, we just pre-create a user document. The user then needs to register with this email.
-                // A better approach would be using Firebase Functions to manage roles.
                 feedbackP.textContent = 'Funcionalidad de invitación simplificada. En una app real, esto enviaría un email. Por ahora, el usuario debe registrarse con este email para ser admin (funcionalidad no implementada).';
                 feedbackP.className = 'text-sm mt-2 text-orange-500';
-
              });
 
             // --- Dashboard Logic ---
             async function loadDashboardData() {
-                const analyticsRef = firebase.doc(firebase.db, "analytics/main");
-                const analyticsSnap = await firebase.getDoc(analyticsRef);
+                const analyticsRef = doc(db, "analytics", "main");
+                const analyticsSnap = await getDoc(analyticsRef);
 
                 if (analyticsSnap.exists()) {
                     const data = analyticsSnap.data();
@@ -700,23 +701,17 @@ const firebaseConfig = {
                     const avgTime = (data.sessionCount > 0) ? (data.totalSessionTime / data.sessionCount).toFixed(1) : 0;
                     document.getElementById('stats-avg-time').textContent = avgTime;
 
-                    // This is a simplified way to get timestamps. A real app would use Cloud Functions to aggregate data.
-                    const visitsCol = firebase.collection(firebase.db, "analytics");
-                    const visitsQuery = firebase.query(visitsCol); // Not optimal, fetches all.
-                    const visitsSnapshot = await firebase.getDocs(visitsQuery);
+                    const allTimestamps = data.visitTimestamps && Array.isArray(data.visitTimestamps) 
+                        ? data.visitTimestamps.map(ts => ts.toDate ? ts.toDate() : new Date(ts.seconds * 1000)) 
+                        : [];
                     
-                    let allTimestamps = [];
-                    visitsSnapshot.docs.forEach(doc => {
-                        if (doc.data().visitTimestamps) {
-                             allTimestamps.push(...doc.data().visitTimestamps.map(ts => ts.toDate()));
-                        }
-                    });
-
                     renderCharts(allTimestamps);
                 }
             }
 
             function renderCharts(timestamps) {
+                if (!timestamps || timestamps.length === 0) return;
+                
                 const dailyData = timestamps.reduce((acc, ts) => {
                     const day = new Date(ts.getFullYear(), ts.getMonth(), ts.getDate()).toISOString().split('T')[0];
                     acc[day] = (acc[day] || 0) + 1;
@@ -784,7 +779,7 @@ const firebaseConfig = {
 
                 } catch (error) {
                     console.error("Error calling Gemini API:", error);
-                    throw error; // Re-throw the error to be caught by the caller
+                    throw error;
                 }
             }
             
@@ -1024,10 +1019,9 @@ const firebaseConfig = {
                 }
             });
 
-            initializeApp();
-        });
+            mainApp();
+    });
     </script>
 </body>
 </html>
-
 
