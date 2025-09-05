@@ -162,7 +162,7 @@
                            <span class="mr-2">🧠</span> Ver Procedimiento Completo
                         </button>
                         <div class="gemini-solve-result-container mt-4 p-4 border border-slate-200 rounded-lg min-h-[100px] hidden">
-                           <!-- Step-by-step solution will be injected here -->
+                           
                         </div>
                     </div>
                 </div>
@@ -530,27 +530,26 @@
                     const methodName = btn.closest('.content-section').dataset.methodName;
 
                     solveResultContainer.classList.toggle('hidden');
-                    if (solveResultContainer.innerHTML.trim() !== '' || solveResultContainer.classList.contains('hidden')) {
-                        return;
-                    }
-
-                    solveResultContainer.innerHTML = '<div class="loader"></div>';
-                    btn.disabled = true;
-
-                    const solvePrompt = `Resuelve la siguiente ecuación diferencial de primer orden paso a paso, explicando cada parte del proceso. La ecuación es: ${problem}. El método a usar es el de Ecuaciones ${methodName}. Formatea la solución con encabezados claros para cada paso y usa delimitadores de $$ para todas las expresiones matemáticas.`;
                     
-                    try {
-                        const result = await callGemini(solvePrompt);
-                        if (result && result.candidates?.[0]?.content?.parts?.[0]?.text) {
-                            solveResultContainer.innerHTML = result.candidates[0].content.parts[0].text.replace(/\n/g, '<br>');
-                            renderMath(solveResultContainer);
-                        } else {
-                             solveResultContainer.innerHTML = `<p class="text-red-500">No se pudo generar la solución.</p>`;
+                    if (!solveResultContainer.classList.contains('hidden') && solveResultContainer.innerHTML.trim() === '') {
+                        solveResultContainer.innerHTML = '<div class="loader"></div>';
+                        btn.disabled = true;
+
+                        const solvePrompt = `Resuelve la siguiente ecuación diferencial de primer orden paso a paso, explicando cada parte del proceso. La ecuación es: ${problem}. El método a usar es el de Ecuaciones ${methodName}. Formatea la solución con encabezados claros para cada paso y usa delimitadores de $$ para todas las expresiones matemáticas.`;
+                        
+                        try {
+                            const result = await callGemini(solvePrompt);
+                            if (result && result.candidates?.[0]?.content?.parts?.[0]?.text) {
+                                solveResultContainer.innerHTML = result.candidates[0].content.parts[0].text.replace(/\n/g, '<br>');
+                                renderMath(solveResultContainer);
+                            } else {
+                                 solveResultContainer.innerHTML = `<p class="text-red-500">No se pudo generar la solución.</p>`;
+                            }
+                        } catch (error) {
+                            handleApiError(error, solveResultContainer);
+                        } finally {
+                            btn.disabled = false;
                         }
-                    } catch (error) {
-                        handleApiError(error, solveResultContainer);
-                    } finally {
-                        btn.disabled = false;
                     }
                 });
             });
@@ -679,4 +678,5 @@
     </script>
 </body>
 </html>
+
 
