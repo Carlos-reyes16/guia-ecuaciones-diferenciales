@@ -61,6 +61,12 @@
             background-color: #a1a1aa; /* zinc-400 */
             cursor: not-allowed;
         }
+        .secondary-btn {
+            background-color: #475569; /* slate-600 */
+        }
+        .secondary-btn:hover {
+            background-color: #334155; /* slate-700 */
+        }
         .loader {
             width: 24px;
             height: 24px;
@@ -84,13 +90,25 @@
 <body class="text-slate-800">
 
     <div class="min-h-screen container mx-auto px-4 py-8 md:py-12">
+        
+        <div id="api-key-alert" class="hidden bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-8 rounded-md" role="alert">
+          <p class="font-bold">Acción Requerida: Configura tu API Key</p>
+          <p>Para activar las funciones de IA, necesitas obtener una clave de API gratuita de Google AI Studio y pegarla en el código de este archivo.</p>
+        </div>
+
         <header class="text-center mb-10">
             <h1 class="text-3xl md:text-4xl font-bold text-slate-900">Guía Interactiva y Asistente IA de Ecuaciones Diferenciales</h1>
-            <p class="mt-2 text-lg text-slate-600">Una guía para identificar, resolver y aplicar los tipos más comunes, ahora con IA.</p>
+            <p class="mt-2 text-lg text-slate-600">Una herramienta de estudio completa para resolver y verificar EDOs de primer orden.</p>
         </header>
 
         <nav class="mb-8 border-b border-slate-200">
             <ul class="flex flex-wrap -mb-px justify-center text-sm font-medium text-center text-slate-500">
+                 <li class="mr-2">
+                    <button class="nav-btn inline-block p-4 rounded-t-lg font-bold text-teal-600" data-target="custom-equation">Tu Ecuación</button>
+                </li>
+                <li class="mr-2">
+                    <button class="nav-btn inline-block p-4 rounded-t-lg" data-target="identificar-metodos">Cómo Identificar Métodos</button>
+                </li>
                 <li class="mr-2">
                     <button class="nav-btn inline-block p-4 rounded-t-lg" data-target="separables">Variables Separables</button>
                 </li>
@@ -110,7 +128,7 @@
                     <button class="nav-btn inline-block p-4 rounded-t-lg" data-target="coeficientes">Coef. Lineales</button>
                 </li>
                  <li class="mr-2">
-                    <button class="nav-btn inline-block p-4 rounded-t-lg font-bold text-teal-600" data-target="aplicaciones">Aplicaciones</button>
+                    <button class="nav-btn inline-block p-4 rounded-t-lg" data-target="aplicaciones">Aplicaciones</button>
                 </li>
             </ul>
         </nav>
@@ -119,26 +137,80 @@
             <!-- Template for Method Sections -->
             <template id="method-template">
                 <div class="border-t-2 border-slate-200 mt-8 pt-6">
-                    <h3 class="text-xl font-semibold mb-3 text-slate-800">Asistente IA</h3>
-                    <p class="text-slate-600 mb-4">¿Necesitas más práctica? Genera un nuevo problema de ejemplo con un solo clic.</p>
+                    <h3 class="text-xl font-semibold mb-3 text-slate-800">Asistente de Práctica IA</h3>
+                    <p class="text-slate-600 mb-4">Genera un problema, intenta resolverlo y comprueba tu respuesta.</p>
                     <button class="gemini-btn gemini-example-btn font-bold py-2 px-4 rounded-lg inline-flex items-center">
-                        <span class="mr-2">✨</span> Generar Nuevo Ejemplo
+                        <span class="mr-2">✨</span> Generar Nuevo Problema
                     </button>
                     <div class="gemini-result-container mt-4 p-4 bg-slate-50 rounded-lg min-h-[80px]">
                         <!-- Gemini result will be injected here -->
                     </div>
+                    
+                    <div class="check-answer-block hidden mt-4">
+                        <h4 class="font-semibold mb-2">Verifica tu Respuesta</h4>
+                        <p class="text-sm text-slate-600 mb-2">Introduce tu solución (ej: y = x^2 + C) y comprueba si es correcta.</p>
+                        <div class="flex flex-col sm:flex-row gap-2">
+                             <input type="text" class="user-answer-input flex-grow p-2 border border-slate-300 rounded-lg" placeholder="Escribe tu solución aquí...">
+                             <button class="gemini-btn gemini-check-btn font-bold py-2 px-4 rounded-lg">Verificar</button>
+                        </div>
+                        <div class="gemini-check-result-container mt-2 p-3 rounded-lg"></div>
+                    </div>
+
                     <div class="solution-block hidden mt-4">
-                        <button class="gemini-btn gemini-solve-btn font-bold py-2 px-4 rounded-lg inline-flex items-center">
-                           <span class="mr-2">🧠</span> Resolver Paso a Paso
+                        <h4 class="font-semibold mb-2">¿Necesitas ayuda?</h4>
+                        <button class="gemini-btn gemini-solve-btn font-bold py-2 px-4 rounded-lg inline-flex items-center text-sm">
+                           <span class="mr-2">🧠</span> Ver Procedimiento Completo
                         </button>
-                        <div class="gemini-solve-result-container mt-4 p-4 border border-slate-200 rounded-lg min-h-[100px]">
+                        <div class="gemini-solve-result-container mt-4 p-4 border border-slate-200 rounded-lg min-h-[100px] hidden">
                            <!-- Step-by-step solution will be injected here -->
                         </div>
                     </div>
                 </div>
             </template>
+            
+            <!-- Custom Equation Solver -->
+            <section id="custom-equation" class="content-section bg-white p-6 md:p-8 rounded-lg shadow-md">
+                 <h2 class="text-2xl font-bold mb-4 text-teal-700">Calculadora de Ecuaciones Diferenciales</h2>
+                 <p class="mb-6 text-slate-600">Introduce tu ecuación, obtén una recomendación del método ideal y luego resuélvela paso a paso.</p>
+                 
+                 <div class="space-y-4">
+                    <div>
+                        <label for="custom-eq-input" class="block font-semibold mb-1">Tu Ecuación Diferencial:</label>
+                        <input type="text" id="custom-eq-input" placeholder="Ej: dy/dx = 2xy" class="w-full p-2 border border-slate-300 rounded-lg font-mono">
+                    </div>
+                    <div class="flex flex-col sm:flex-row gap-2">
+                        <button id="analyze-custom-eq-btn" class="gemini-btn font-bold py-2 px-6 rounded-lg">Analizar y Recomendar</button>
+                    </div>
+                 </div>
 
-            <!-- Sections -->
+                 <div id="custom-eq-recommendation-container" class="mt-6 pt-6 border-t border-slate-200 min-h-[80px]">
+                    <!-- Recommendation will be injected here -->
+                 </div>
+
+                 <div id="custom-solver-block" class="hidden mt-6 pt-6 border-t border-slate-200">
+                    <div>
+                        <label for="custom-method-select" class="block font-semibold mb-1">Método de Resolución a Utilizar:</label>
+                        <select id="custom-method-select" class="w-full p-2 border border-slate-300 rounded-lg bg-white">
+                           <!-- Options will be populated by JS -->
+                        </select>
+                    </div>
+                    <button id="solve-custom-eq-btn" class="gemini-btn secondary-btn font-bold py-2 px-6 rounded-lg mt-4">Resolver con Método Seleccionado</button>
+                     <div id="custom-eq-result-container" class="mt-4 min-h-[150px]">
+                         <!-- Custom solution will be injected here -->
+                     </div>
+                 </div>
+            </section>
+            
+            <!-- How to Identify Section -->
+            <section id="identificar-metodos" class="content-section bg-white p-6 md:p-8 rounded-lg shadow-md">
+                 <h2 class="text-2xl font-bold mb-4 text-teal-700">Cómo Identificar el Método Correcto</h2>
+                 <p class="mb-6 text-slate-600">Aprender a clasificar una ecuación es el primer y más importante paso. Aquí tienes una guía rápida para reconocer las pistas clave en cada tipo de EDO.</p>
+                 <div id="identification-guide-content" class="space-y-6">
+                    <!-- Guide content will be injected here -->
+                 </div>
+            </section>
+
+            <!-- Sections for methods -->
             <section id="separables" class="content-section bg-white p-6 md:p-8 rounded-lg shadow-md"></section>
             <section id="homogeneas" class="content-section bg-white p-6 md:p-8 rounded-lg shadow-md"></section>
             <section id="exactas" class="content-section bg-white p-6 md:p-8 rounded-lg shadow-md"></section>
@@ -148,10 +220,10 @@
             
             <!-- Aplicaciones -->
             <section id="aplicaciones" class="content-section bg-white p-6 md:p-8 rounded-lg shadow-md">
-                 <h2 class="text-2xl font-bold mb-4 text-teal-700">7. Aplicaciones de Ecuaciones de 1er Orden</h2>
+                 <h2 class="text-2xl font-bold mb-4 text-teal-700">Aplicaciones de Ecuaciones de 1er Orden</h2>
                  <p class="mb-6 text-slate-600">Las ecuaciones diferenciales son la base para modelar cómo cambian los sistemas en el tiempo. Aquí hay algunos ejemplos clásicos.</p>
-                 <div class="space-y-8">
-                    <!-- Existing application content here... -->
+                 <div class="space-y-8" id="applications-content">
+                    <!-- Application content will be injected here by JS -->
                  </div>
                  <div class="border-t-2 border-slate-200 mt-8 pt-6">
                     <h3 class="text-xl font-semibold mb-3 text-slate-800">✨ Descubre Aplicaciones en tu Campo</h3>
@@ -180,12 +252,12 @@
                             <div>
                                 <h3 class="text-xl font-semibold mb-2">Identificación</h3>
                                 <p class="mb-3">La ecuación se puede reescribir algebraicamente en la siguiente forma:</p>
-                                <div class="formula-block">g(y) dy = f(x) dx</div>
+                                <div class="formula-block">$$ g(y) dy = f(x) dx $$</div>
                             </div>
                             <div>
                                 <h3 class="text-xl font-semibold mb-2">Método de Solución</h3>
                                 <p class="mb-3">Una vez separadas las variables, se integra cada lado de la ecuación de forma independiente.</p>
-                                <div class="formula-block">∫ g(y) dy = ∫ f(x) dx + C</div>
+                                <div class="formula-block">$$ \\int g(y) dy = \\int f(x) dx + C $$</div>
                             </div>
                         </div>`,
                     prompt: "Genera un ejemplo de una ecuación diferencial de primer orden de variables separables en la forma g(y)dy = f(x)dx. Proporciona solo la ecuación. Usa funciones comunes como polinomios, sin, cos o e^x. Usa delimitadores de $$ para la matemática."
@@ -194,87 +266,82 @@
                     name: "Homogéneas",
                     title: "2. Ecuaciones Homogéneas",
                     description: "Estas ecuaciones se caracterizan porque todos sus términos tienen el mismo grado. Se resuelven con una sustitución que las convierte en ecuaciones de variables separables.",
-                    content: `
-                        <h3 class="text-xl font-semibold mb-2">Identificación</h3>
-                        <p class="mb-3">La ecuación se puede expresar en función del cociente y/x:</p>
-                        <div class="formula-block mb-6">dy/dx = F(y/x)</div>
-                        <h3 class="text-xl font-semibold mb-2">Método de Solución</h3>
-                        <ol class="list-decimal list-inside space-y-4">
-                            <li><span class="font-semibold">Realizar la sustitución clave:</span> v = y/x → y = vx</li>
-                            <li><span class="font-semibold">Derivar y reemplazar:</span> dy/dx = v + x (dv/dx)</li>
-                            <li><span class="font-semibold">Resolver la nueva ecuación</span> de variables separables.</li>
-                            <li><span class="font-semibold">Revertir la sustitución:</span> Se reemplaza v = y/x.</li>
-                        </ol>`,
+                    content: `<h3 class="text-xl font-semibold mb-2">Identificación</h3><p class="mb-3">La ecuación se puede expresar en función del cociente y/x:</p><div class="formula-block mb-6">$$ \\frac{dy}{dx} = F(\\frac{y}{x}) $$</div><h3 class="text-xl font-semibold mb-2">Método de Solución</h3><ol class="list-decimal list-inside space-y-4"><li><span class="font-semibold">Sustitución clave:</span> $$ v = y/x \\rightarrow y = vx $$</li><li><span class="font-semibold">Derivar y reemplazar:</span> $$ \\frac{dy}{dx} = v + x \\frac{dv}{dx} $$</li><li><span class="font-semibold">Resolver la nueva ecuación</span> de variables separables.</li><li><span class="font-semibold">Revertir la sustitución:</span> Se reemplaza $$ v = y/x $$.</li></ol>`,
                     prompt: "Genera un ejemplo de una ecuación diferencial homogénea de primer orden en la forma dy/dx = F(y/x). Proporciona solo la ecuación. Asegúrate de que F(y/x) sea una función de la relación y/x. Usa delimitadores de $$ para la matemática."
                 },
                  exactas: {
                     name: "Exactas",
                     title: "3. Ecuaciones Exactas",
                     description: `Provienen de la diferenciación total de una función F(x, y). La clave es verificar primero la "condición de exactitud".`,
-                    content: `
-                        <h3 class="text-xl font-semibold mb-2">Identificación</h3>
-                        <div class="formula-block mb-6">M(x, y) dx + N(x, y) dy = 0</div>
-                        <h3 class="text-xl font-semibold mb-2">Condición de Exactitud</h3>
-                        <div class="formula-block mb-6">∂M/∂y = ∂N/∂x</div>
-                        <h3 class="text-xl font-semibold mb-2">Método de Solución</h3>
-                        <p class="mb-3">La solución es F(x, y) = C. Se encuentra integrando M respecto a x, derivando respecto a y, e igualando a N para hallar la función constante g(y).</p>`,
+                    content: `<h3 class="text-xl font-semibold mb-2">Identificación</h3><div class="formula-block mb-6">$$ M(x, y) dx + N(x, y) dy = 0 $$</div><h3 class="text-xl font-semibold mb-2">Condición de Exactitud</h3><div class="formula-block mb-6">$$ \\frac{\\partial M}{\\partial y} = \\frac{\\partial N}{\\partial x} $$</div><h3 class="text-xl font-semibold mb-2">Método de Solución</h3><p class="mb-3">La solución es $$ F(x, y) = C $$. Se encuentra integrando M respecto a x, derivando respecto a y, e igualando a N para hallar la función constante g(y).</p>`,
                     prompt: "Genera un ejemplo de una ecuación diferencial exacta de primer orden en la forma M(x, y)dx + N(x, y)dy = 0. Proporciona solo la ecuación. Asegúrate de que cumpla la condición de exactitud ∂M/∂y = ∂N/∂x. Usa delimitadores de $$ para la matemática."
                 },
                 lineales: {
                     name: "Lineales",
                     title: "4. Ecuaciones Lineales",
                     description: `Estas ecuaciones tienen una estructura muy definida. Se resuelven con un "factor integrante" que las hace fácilmente integrables.`,
-                    content: `
-                        <h3 class="text-xl font-semibold mb-2">Identificación (Forma Estándar)</h3>
-                        <div class="formula-block mb-6">dy/dx + P(x)y = Q(x)</div>
-                        <h3 class="text-xl font-semibold mb-2">Método de Solución</h3>
-                        <ol class="list-decimal list-inside space-y-4">
-                           <li><span class="font-semibold">Calcular el Factor Integrante (μ):</span><div class="formula-block mt-2">μ(x) = e^(∫ P(x)dx)</div></li>
-                           <li><span class="font-semibold">Aplicar la fórmula de solución:</span><div class="formula-block mt-2">y * μ(x) = ∫ Q(x) * μ(x) dx + C</div></li>
-                           <li><span class="font-semibold">Despejar y.</span></li>
-                        </ol>`,
-                    prompt: "Genera un ejemplo de una ecuación diferencial lineal de primer orden en la forma dy/dx + P(x)y = Q(x). Proporciona solo la ecuación. Usa funciones P(x) y Q(x) que sean integrables con métodos estándar. Usa delimitadores de $$ para la matemática."
+                    content: `<h3 class="text-xl font-semibold mb-2">Identificación (Forma Estándar)</h3><div class="formula-block mb-6">$$ \\frac{dy}{dx} + P(x)y = Q(x) $$</div><h3 class="text-xl font-semibold mb-2">Método de Solución</h3><ol class="list-decimal list-inside space-y-4"><li><span class="font-semibold">Calcular Factor Integrante ($$\\mu$$):</span><div class="formula-block mt-2>$$\\mu(x) = e^{\\int P(x)dx}$$</div></li><li><span class="font-semibold">Aplicar fórmula de solución:</span><div class="formula-block mt-2">$$ y \\cdot \\mu(x) = \\int Q(x) \\cdot \\mu(x) dx + C $$</div></li><li><span class="font-semibold">Despejar y.</span></li></ol>`,
+                    prompt: "Genera un ejemplo de una ecuación diferencial lineal de primer orden en la forma dy/dx + P(x)y = Q(x). Proporciona solo la ecuación. Usa funciones P(x) y Q(x) que sean integrables. Usa delimitadores de $$ para la matemática."
                 },
                 bernoulli: {
                     name: "de Bernoulli",
                     title: "5. Ecuación de Bernoulli",
                     description: "Son ecuaciones no lineales que se parecen mucho a las lineales. Una sustitución inteligente las transforma en una ecuación lineal que ya sabemos resolver.",
-                    content: `
-                        <h3 class="text-xl font-semibold mb-2">Identificación</h3>
-                        <div class="formula-block mb-6">dy/dx + P(x)y = Q(x)yⁿ</div>
-                        <h3 class="text-xl font-semibold mb-2">Método de Solución</h3>
-                        <ol class="list-decimal list-inside space-y-4">
-                           <li><span class="font-semibold">Realizar la sustitución clave:</span><div class="formula-block mt-2">v = y¹⁻ⁿ</div></li>
-                           <li><span class="font-semibold">Transformar a ecuación lineal:</span><div class="formula-block mt-2">dv/dx + (1-n)P(x)v = (1-n)Q(x)</div></li>
-                           <li><span class="font-semibold">Resolver la ecuación lineal para 'v'.</span></li>
-                           <li><span class="font-semibold">Revertir la sustitución.</span></li>
-                        </ol>`,
+                    content: `<h3 class="text-xl font-semibold mb-2">Identificación</h3><div class="formula-block mb-6">$$ \\frac{dy}{dx} + P(x)y = Q(x)y^n $$</div><h3 class="text-xl font-semibold mb-2">Método de Solución</h3><ol class="list-decimal list-inside space-y-4"><li><span class="font-semibold">Sustitución clave:</span><div class="formula-block mt-2">$$ v = y^{1-n} $$</div></li><li><span class="font-semibold">Transformar a ecuación lineal:</span><div class="formula-block mt-2>$$ \\frac{dv}{dx} + (1-n)P(x)v = (1-n)Q(x) $$</div></li><li><span class="font-semibold">Resolver la ecuación lineal para 'v'.</span></li><li><span class="font-semibold">Revertir la sustitución.</span></li></ol>`,
                     prompt: "Genera un ejemplo de una ecuación de Bernoulli de primer orden en la forma dy/dx + P(x)y = Q(x)y^n, donde n no es 0 ni 1. Proporciona solo la ecuación. Usa delimitadores de $$ para la matemática."
                 },
                 coeficientes: {
                     name: "con Coeficientes Lineales",
                     title: "6. Ecuaciones con Coeficientes Lineales",
                     description: "La forma de esta ecuación involucra dos líneas rectas. El método de solución depende de si estas líneas se cruzan o son paralelas.",
-                    content: `
-                        <h3 class="text-xl font-semibold mb-2">Identificación</h3>
-                        <div class="formula-block mb-6">(a₁x + b₁y + c₁)dx + (a₂x + b₂y + c₂)dy = 0</div>
-                        <h3 class="text-xl font-semibold mb-2">Análisis de Casos</h3>
-                        <p class="mb-4">Se debe calcular el determinante \`a₁b₂ - a₂b₁\`.</p>
-                        <div class="grid md:grid-cols-2 gap-6">
-                           <div class="border border-slate-200 rounded-lg p-4"><h4 class="font-semibold text-lg mb-2">Caso 1: Líneas se cruzan (≠ 0)</h4><p>Se usa la sustitución x = u + h, y = v + k para convertirla en una homogénea.</p></div>
-                           <div class="border border-slate-200 rounded-lg p-4"><h4 class="font-semibold text-lg mb-2">Caso 2: Líneas paralelas (= 0)</h4><p>Se usa la sustitución z = a₁x + b₁y para convertirla en una de variables separables.</p></div>
-                        </div>`,
+                    content: `<h3 class="text-xl font-semibold mb-2">Identificación</h3><div class="formula-block mb-6">$$ (a_1x + b_1y + c_1)dx + (a_2x + b_2y + c_2)dy = 0 $$</div><h3 class="text-xl font-semibold mb-2">Análisis de Casos</h3><p class="mb-4">Se debe calcular el determinante $$a_1b_2 - a_2b_1$$.</p><div class="grid md:grid-cols-2 gap-6"><div class="border border-slate-200 rounded-lg p-4"><h4 class="font-semibold text-lg mb-2">Caso 1: Líneas se cruzan ($$\\neq 0$$)</h4><p>Se usa la sustitución $$ x = u + h, y = v + k $$ para convertirla en una homogénea.</p></div><div class="border border-slate-200 rounded-lg p-4"><h4 class="font-semibold text-lg mb-2">Caso 2: Líneas paralelas ($$= 0$$)</h4><p>Se usa la sustitución $$ z = a_1x + b_1y $$ para convertirla en una de variables separables.</p></div></div>`,
                     prompt: "Genera un ejemplo de una ecuación diferencial con coeficientes lineales en la forma (a1x + b1y + c1)dx + (a2x + b2y + c2)dy = 0. Proporciona solo la ecuación. Usa delimitadores de $$ para la matemática."
                 }
             };
 
+            const identificationGuideContent = `
+                <div class="p-4 border border-slate-200 rounded-lg">
+                    <h3 class="font-bold text-lg text-teal-700">1. Variables Separables</h3>
+                    <p class="mt-1 mb-2 text-slate-600"><span class="font-semibold">La Pista Clave:</span> ¿Puedes manipular algebraicamente la ecuación para que todos los términos con 'y' y 'dy' queden de un lado y todos los términos con 'x' y 'dx' del otro?</p>
+                    <div class="formula-block text-sm">Ejemplo: $$ (x^2+1) \\frac{dy}{dx} = y $$ es separable porque se puede reescribir como $$ \\frac{1}{y} dy = \\frac{1}{x^2+1} dx $$.</div>
+                </div>
+                 <div class="p-4 border border-slate-200 rounded-lg">
+                    <h3 class="font-bold text-lg text-teal-700">2. Ecuaciones Lineales</h3>
+                    <p class="mt-1 mb-2 text-slate-600"><span class="font-semibold">La Pista Clave:</span> ¿Tiene la estructura rígida $$ \\frac{dy}{dx} + P(x)y = Q(x) $$? La variable 'y' y su derivada deben tener exponente 1.</p>
+                    <div class="formula-block text-sm">Ejemplo: $$ \\frac{dy}{dx} + (2x)y = x^2 $$ es lineal. Aquí, $$ P(x) = 2x $$ y $$ Q(x) = x^2 $$.</div>
+                </div>
+                 <div class="p-4 border border-slate-200 rounded-lg">
+                    <h3 class="font-bold text-lg text-teal-700">3. Ecuación de Bernoulli</h3>
+                    <p class="mt-1 mb-2 text-slate-600"><span class="font-semibold">La Pista Clave:</span> Es casi lineal, pero tiene un término $$y^n$$ extra multiplicando al lado derecho.</p>
+                    <div class="formula-block text-sm">Ejemplo: $$ \\frac{dy}{dx} + \\frac{1}{x}y = x y^2 $$ es una ecuación de Bernoulli con n=2. Si no estuviera el $$ y^2 $$, sería lineal.</div>
+                </div>
+                 <div class="p-4 border border-slate-200 rounded-lg">
+                    <h3 class="font-bold text-lg text-teal-700">4. Ecuaciones Exactas</h3>
+                    <p class="mt-1 mb-2 text-slate-600"><span class="font-semibold">La Pista Clave:</span> Viene en la forma $$ M(x, y)dx + N(x, y)dy = 0 $$. Si no es separable, lineal o de Bernoulli, el siguiente paso es probar la condición de exactitud: $$ \\frac{\\partial M}{\\partial y} = \\frac{\\partial N}{\\partial x} $$</p>
+                    <div class="formula-block text-sm">Ejemplo: $$ (2xy)dx + (x^2 - 1)dy = 0 $$. Aquí, $$ M = 2xy $$ y $$ N = x^2-1 $$. Como $$ \\frac{\\partial M}{\\partial y} = 2x $$ y $$ \\frac{\\partial N}{\\partial x} = 2x $$, es exacta.</div>
+                </div>
+                 <div class="p-4 border border-slate-200 rounded-lg">
+                    <h3 class="font-bold text-lg text-teal-700">5. Ecuaciones Homogéneas</h3>
+                    <p class="mt-1 mb-2 text-slate-600"><span class="font-semibold">La Pista Clave:</span> Todos los términos tienen el mismo "grado" (la suma de los exponentes de x e y). O, equivalentemente, la ecuación se puede reescribir como $$ \\frac{dy}{dx} = F(\\frac{y}{x}) $$.</p>
+                    <div class="formula-block text-sm">Ejemplo: $$ (x^2 + y^2)dx + 2xy dy = 0 $$. Cada término ($$x^2, y^2, 2xy$$) es de grado 2.</div>
+                </div>
+            `;
+            document.getElementById('identification-guide-content').innerHTML = identificationGuideContent;
+
+
+            // --- ⚠️ CRITICAL API KEY CONFIGURATION ---
+            const apiKey = "AIzaSyCl3DHOrqxjQEptoFMttbVsRtiEFAoAlGU"; // API key is now included.
+            // -----------------------------------------
+
             const mainContainer = document.querySelector('main');
             const template = document.getElementById('method-template');
 
+            const customMethodSelect = document.getElementById('custom-method-select');
             Object.keys(contentData).forEach(key => {
                 const section = document.getElementById(key);
+                const data = contentData[key];
+                
                 if(section){
-                    const data = contentData[key];
                     section.dataset.methodName = data.name;
                     let content = `
                         <h2 class="text-2xl font-bold mb-4 text-teal-700">${data.title}</h2>
@@ -286,33 +353,20 @@
                     section.innerHTML = content;
                     section.appendChild(geminiBlock);
                 }
+
+                const option = document.createElement('option');
+                option.value = data.name;
+                option.textContent = data.title.split('. ')[1]; 
+                customMethodSelect.appendChild(option);
             });
             
-            // Populate applications tab content
-            document.querySelector('#aplicaciones .space-y-8').innerHTML = `
-                <div>
-                    <h3 class="text-xl font-semibold mb-2">Crecimiento y Decaimiento Exponencial</h3>
-                    <p class="mb-3">Describe fenómenos donde la tasa de cambio de una cantidad es proporcional a la cantidad misma.</p>
-                    <div class="formula-block mb-3">dy/dt = ky</div>
-                </div>
-                <div>
-                    <h3 class="text-xl font-semibold mb-2">Ley de Enfriamiento de Newton</h3>
-                    <p class="mb-3">La tasa a la que un objeto cambia de temperatura es proporcional a la diferencia entre su temperatura y la del ambiente.</p>
-                    <div class="formula-block mb-3">dT/dt = k(T - Tₐ)</div>
-                </div>
-                <div>
-                    <h3 class="text-xl font-semibold mb-2">Problemas de Mezclas</h3>
-                    <p class="mb-3">Modelan la cantidad de una sustancia en un tanque donde un fluido entra y sale.</p>
-                    <div class="formula-block mb-3">dA/dt = (tasa entrada) - (tasa salida)</div>
-                </div>
-                <div>
-                    <h3 class="text-xl font-semibold mb-2">Circuitos Eléctricos RL en Serie</h3>
-                    <p class="mb-3">Describe la corriente en un circuito simple con una resistencia, un inductor y una fuente de voltaje.</p>
-                    <div class="formula-block mb-3">L (dI/dt) + RI = V(t)</div>
-                </div>
-            `;
-
-            // Navigation
+            const applicationsContent = document.getElementById('applications-content');
+            applicationsContent.innerHTML = `
+                <div><h3 class="text-xl font-semibold mb-2">Crecimiento y Decaimiento Exponencial</h3><p class="mb-3">Describe fenómenos donde la tasa de cambio de una cantidad es proporcional a la cantidad misma.</p><div class="formula-block mb-3">$$ \\frac{dy}{dt} = ky $$</div></div>
+                <div><h3 class="text-xl font-semibold mb-2">Ley de Enfriamiento de Newton</h3><p class="mb-3">La tasa a la que un objeto cambia de temperatura es proporcional a la diferencia entre su temperatura y la del ambiente.</p><div class="formula-block mb-3">$$ \\frac{dT}{dt} = k(T - T_a) $$</div></div>
+                <div><h3 class="text-xl font-semibold mb-2">Problemas de Mezclas</h3><p class="mb-3">Modelan la cantidad de una sustancia en un tanque donde un fluido entra y sale.</p><div class="formula-block mb-3">$$ \\frac{dA}{dt} = (\\text{tasa entrada}) - (\\text{tasa salida}) $$</div></div>
+                <div><h3 class="text-xl font-semibold mb-2">Circuitos Eléctricos RL en Serie</h3><p class="mb-3">Describe la corriente en un circuito simple con una resistencia, un inductor y una fuente de voltaje.</p><div class="formula-block mb-3">$$ L \\frac{dI}{dt} + RI = V(t) $$</div></div>`;
+            
             const navButtons = document.querySelectorAll('.nav-btn');
             const contentSections = document.querySelectorAll('.content-section');
             navButtons.forEach(button => {
@@ -323,18 +377,39 @@
                     contentSections.forEach(section => section.classList.toggle('active', section.id === targetId));
                 });
             });
-            document.querySelector('.nav-btn[data-target="separables"]').click();
+            
+            function renderMath(container) {
+                 if (window.renderMathInElement) {
+                    window.renderMathInElement(container, {
+                        delimiters: [
+                            {left: "$$", right: "$$", display: true},
+                            {left: "$", right: "$", display: false}
+                        ]
+                    });
+                }
+            }
 
-            // Gemini API Call Logic
-            const apiKey = "AIzaSyCl3DHOrqxjQEptoFMttbVsRtiEFAoAlGU"; 
+            function initializeApp() {
+                document.querySelector('.nav-btn[data-target="custom-equation"]').click();
+                renderMath(document.body);
+
+                if (!apiKey) {
+                    document.getElementById('api-key-alert').classList.remove('hidden');
+                    document.querySelectorAll('.gemini-btn').forEach(btn => {
+                        btn.disabled = true;
+                    });
+                }
+            }
+
             const model = "gemini-2.5-flash-preview-05-20";
 
             async function callGemini(prompt, useGrounding = false, retries = 3, delay = 1000) {
+                if (!apiKey) {
+                    throw new Error("API key is missing.");
+                }
                 const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
                 
-                const payload = {
-                    contents: [{ parts: [{ text: prompt }] }],
-                };
+                const payload = { contents: [{ parts: [{ text: prompt }] }] };
 
                 if (useGrounding) {
                     payload.tools = [{ "google_search": {} }];
@@ -348,7 +423,7 @@
                     });
 
                     if (!response.ok) {
-                        if (response.status === 429 && retries > 0) { // Throttling
+                        if (response.status === 429 && retries > 0) {
                             await new Promise(res => setTimeout(res, delay));
                             return callGemini(prompt, useGrounding, retries - 1, delay * 2);
                         }
@@ -360,94 +435,207 @@
 
                 } catch (error) {
                     console.error("Error calling Gemini API:", error);
-                     if (retries > 0) {
-                        await new Promise(res => setTimeout(res, delay));
-                        return callGemini(prompt, useGrounding, retries - 1, delay * 2);
-                    }
-                    return null;
-                }
-            }
-
-            function renderMath(container) {
-                 if (window.renderMathInElement) {
-                    window.renderMathInElement(container, {
-                        delimiters: [
-                            {left: "$$", right: "$$", display: true},
-                            {left: "$", right: "$", display: false}
-                        ]
-                    });
+                    throw error; // Re-throw the error to be caught by the caller
                 }
             }
             
-            // Event Listeners for Gemini Example Buttons
+            function handleApiError(error, container) {
+                if (error.message.includes('401')) {
+                    container.innerHTML = `<p class="text-red-600 font-bold">Error 401: Clave de API no válida o ausente. Asegúrate de haberla pegado correctamente en la variable 'apiKey' del código.</p>`;
+                } else if (error.message.includes('403')) {
+                     container.innerHTML = `<p class="text-red-600 font-bold">Error 403: Permiso denegado. Asegúrate de haber habilitado la "Vertex AI API" en tu proyecto de Google Cloud.</p>`;
+                } else if (error.message.includes('API key is missing')) {
+                    container.innerHTML = `<p class="text-red-600 font-bold">Error: Falta la clave de API. Por favor, configúrala en el código para usar las funciones de IA.</p>`;
+                } else {
+                    container.innerHTML = `<p class="text-red-600 font-bold">Ocurrió un error al contactar la IA. Inténtalo de nuevo.</p>`;
+                }
+            }
+
+            // --- Event Listeners for Practice Sections ---
             document.querySelectorAll('.gemini-example-btn').forEach(button => {
                 button.addEventListener('click', async (event) => {
                     const btn = event.currentTarget;
-                    const prompt = btn.dataset.prompt;
                     const resultContainer = btn.nextElementSibling;
-                    const solutionBlock = resultContainer.nextElementSibling;
-                    const solveBtn = solutionBlock.querySelector('.gemini-solve-btn');
-                    const solveResultContainer = solutionBlock.querySelector('.gemini-solve-result-container');
+                    const checkBlock = resultContainer.nextElementSibling;
+                    const solutionBlock = checkBlock.nextElementSibling;
 
-                    // Reset state
+                    checkBlock.classList.add('hidden');
                     solutionBlock.classList.add('hidden');
-                    solveResultContainer.innerHTML = '';
                     resultContainer.dataset.problem = '';
                     resultContainer.innerHTML = '<div class="loader"></div>';
                     btn.disabled = true;
 
-                    const result = await callGemini(prompt);
-                    
-                    if (result && result.candidates?.[0]?.content?.parts?.[0]?.text) {
-                        const text = result.candidates[0].content.parts[0].text;
-                        resultContainer.innerHTML = `<div class="formula-block">${text.trim()}</div>`;
-                        resultContainer.dataset.problem = text.trim();
-                        renderMath(resultContainer);
-                        solutionBlock.classList.remove('hidden');
-                    } else {
-                        resultContainer.innerHTML = `<p class="text-red-500">No se pudo generar un ejemplo. Inténtalo de nuevo.</p>`;
+                    try {
+                        const result = await callGemini(btn.dataset.prompt);
+                        if (result && result.candidates?.[0]?.content?.parts?.[0]?.text) {
+                            const text = result.candidates[0].content.parts[0].text;
+                            resultContainer.innerHTML = `<div class="font-semibold">${text.trim()}</div>`;
+                            resultContainer.dataset.problem = text.trim();
+                            renderMath(resultContainer);
+                            checkBlock.classList.remove('hidden');
+                            solutionBlock.classList.remove('hidden');
+                        } else {
+                            resultContainer.innerHTML = `<p class="text-red-500">La IA no devolvió un ejemplo. Inténtalo de nuevo.</p>`;
+                        }
+                    } catch (error) {
+                        handleApiError(error, resultContainer);
+                    } finally {
+                        btn.disabled = false;
                     }
-                    btn.disabled = false;
                 });
             });
 
-            // Event Listeners for Gemini Solve Buttons
-             document.querySelectorAll('.gemini-solve-btn').forEach(button => {
+            document.querySelectorAll('.gemini-check-btn').forEach(button => {
                 button.addEventListener('click', async (event) => {
                     const btn = event.currentTarget;
-                    const section = btn.closest('.content-section');
-                    const methodName = section.dataset.methodName;
-                    const resultContainer = section.querySelector('.gemini-result-container');
-                    const problem = resultContainer.dataset.problem;
-                    const solveResultContainer = btn.nextElementSibling;
+                    const resultContainer = btn.closest('.check-answer-block').querySelector('.gemini-check-result-container');
+                    const userAnswer = btn.previousElementSibling.value.trim();
+                    const problem = btn.closest('.content-section').querySelector('.gemini-result-container').dataset.problem;
 
-                    if (!problem) {
-                        solveResultContainer.innerHTML = `<p class="text-red-500">Primero genera un problema.</p>`;
+                    if (!userAnswer) {
+                        resultContainer.innerHTML = `<p class="text-orange-600 font-semibold">Por favor, introduce tu respuesta.</p>`;
+                        return;
+                    }
+
+                    resultContainer.innerHTML = '<div class="loader" style="margin: 0 auto;"></div>';
+                    btn.disabled = true;
+
+                    const checkPrompt = `La ecuación diferencial es: ${problem}. Un usuario ha propuesto la siguiente solución: ${userAnswer}. ¿Es esta solución correcta? Responde 'Correcto.' o 'Incorrecto.' en la primera línea. Luego, en una nueva línea, da una explicación muy breve y simple del porqué, sin revelar la solución completa si es incorrecta.`;
+                    
+                    try {
+                        const result = await callGemini(checkPrompt);
+                        if (result && result.candidates?.[0]?.content?.parts?.[0]?.text) {
+                            const text = result.candidates[0].content.parts[0].text;
+                            if (text.toLowerCase().startsWith('correcto')) {
+                                resultContainer.innerHTML = `<p class="text-green-600 font-bold">¡Correcto! 🎉</p><p class="text-sm mt-1">${text.substring(text.indexOf('.') + 1).trim()}</p>`;
+                            } else {
+                                resultContainer.innerHTML = `<p class="text-red-600 font-bold">Incorrecto.</p><p class="text-sm mt-1">${text.substring(text.indexOf('.') + 1).trim()}</p>`;
+                            }
+                        } else {
+                            resultContainer.innerHTML = `<p class="text-red-500">No se pudo verificar la respuesta.</p>`;
+                        }
+                    } catch (error) {
+                        handleApiError(error, resultContainer);
+                    } finally {
+                        btn.disabled = false;
+                    }
+                });
+            });
+
+            document.querySelectorAll('.gemini-solve-btn').forEach(button => {
+                button.addEventListener('click', async (event) => {
+                    const btn = event.currentTarget;
+                    const solveResultContainer = btn.nextElementSibling;
+                    const problem = btn.closest('.content-section').querySelector('.gemini-result-container').dataset.problem;
+                    const methodName = btn.closest('.content-section').dataset.methodName;
+
+                    solveResultContainer.classList.toggle('hidden');
+                    if (solveResultContainer.innerHTML.trim() !== '' || solveResultContainer.classList.contains('hidden')) {
                         return;
                     }
 
                     solveResultContainer.innerHTML = '<div class="loader"></div>';
                     btn.disabled = true;
 
-                    const solvePrompt = `Resuelve la siguiente ecuación diferencial de primer orden paso a paso, explicando cada parte del proceso. La ecuación es: ${problem}. El método a usar es el de Ecuaciones ${methodName}. Formatea la solución con encabezados claros para cada paso (por ejemplo, 'Paso 1: ...') y usa delimitadores de $$ para todas las expresiones matemáticas.`;
+                    const solvePrompt = `Resuelve la siguiente ecuación diferencial de primer orden paso a paso, explicando cada parte del proceso. La ecuación es: ${problem}. El método a usar es el de Ecuaciones ${methodName}. Formatea la solución con encabezados claros para cada paso y usa delimitadores de $$ para todas las expresiones matemáticas.`;
                     
-                    const result = await callGemini(solvePrompt);
-
-                    if (result && result.candidates?.[0]?.content?.parts?.[0]?.text) {
-                        const text = result.candidates[0].content.parts[0].text;
-                        solveResultContainer.innerHTML = text.replace(/\n/g, '<br>');
-                        renderMath(solveResultContainer);
-                    } else {
-                         solveResultContainer.innerHTML = `<p class="text-red-500">No se pudo generar la solución. Inténtalo de nuevo.</p>`;
+                    try {
+                        const result = await callGemini(solvePrompt);
+                        if (result && result.candidates?.[0]?.content?.parts?.[0]?.text) {
+                            solveResultContainer.innerHTML = result.candidates[0].content.parts[0].text.replace(/\n/g, '<br>');
+                            renderMath(solveResultContainer);
+                        } else {
+                             solveResultContainer.innerHTML = `<p class="text-red-500">No se pudo generar la solución.</p>`;
+                        }
+                    } catch (error) {
+                        handleApiError(error, solveResultContainer);
+                    } finally {
+                        btn.disabled = false;
                     }
-                    btn.disabled = false;
                 });
             });
+
+            // --- Event Listener for Custom Solver ---
+            document.getElementById('analyze-custom-eq-btn').addEventListener('click', async () => {
+                const btn = document.getElementById('analyze-custom-eq-btn');
+                const equation = document.getElementById('custom-eq-input').value.trim();
+                const recommendationContainer = document.getElementById('custom-eq-recommendation-container');
+                const solverBlock = document.getElementById('custom-solver-block');
+
+                if (!equation) {
+                    recommendationContainer.innerHTML = `<p class="text-orange-600 font-semibold">Por favor, introduce una ecuación.</p>`;
+                    return;
+                }
+
+                recommendationContainer.innerHTML = '<div class="loader"></div>';
+                solverBlock.classList.add('hidden');
+                btn.disabled = true;
+
+                const methodList = Object.values(contentData).map(m => m.name).join(', ');
+                const prompt = `Analiza la ecuación diferencial de primer orden: "${equation}". Identifica el método más eficiente para resolverla de la siguiente lista: ${methodList}. En la primera línea, escribe solo el nombre del método recomendado (ej: "Variables Separables"). En una nueva línea, escribe una explicación concisa del porqué.`;
+
+                try {
+                    const result = await callGemini(prompt);
+                    if (result && result.candidates?.[0]?.content?.parts?.[0]?.text) {
+                        const text = result.candidates[0].content.parts[0].text.trim();
+                        const lines = text.split('\n');
+                        const recommendedMethod = lines[0].trim();
+                        const reason = lines.slice(1).join(' ').trim();
+                        
+                        recommendationContainer.innerHTML = `
+                            <p><span class="font-bold">Método Recomendado:</span> <span class="text-teal-700 font-semibold">${recommendedMethod}</span></p>
+                            <p class="mt-2"><span class="font-bold">Razón:</span> ${reason}</p>
+                        `;
+
+                        // Pre-select the recommended method in the dropdown
+                        const select = document.getElementById('custom-method-select');
+                        const optionToSelect = Array.from(select.options).find(opt => recommendedMethod.includes(opt.text));
+                        if(optionToSelect) {
+                            select.value = optionToSelect.value;
+                        }
+
+                        solverBlock.classList.remove('hidden');
+
+                    } else {
+                        recommendationContainer.innerHTML = `<p class="text-red-500">No se pudo analizar la ecuación.</p>`;
+                    }
+                } catch(error) {
+                    handleApiError(error, recommendationContainer);
+                } finally {
+                    btn.disabled = false;
+                }
+            });
+
+            document.getElementById('solve-custom-eq-btn').addEventListener('click', async () => {
+                 const btn = document.getElementById('solve-custom-eq-btn');
+                const equation = document.getElementById('custom-eq-input').value.trim();
+                const method = document.getElementById('custom-method-select').value;
+                const resultContainer = document.getElementById('custom-eq-result-container');
+
+                resultContainer.innerHTML = '<div class="loader"></div>';
+                btn.disabled = true;
+
+                const prompt = `Resuelve la siguiente ecuación diferencial: "${equation}" utilizando el método de Ecuaciones ${method}. Muestra todos los pasos de manera clara, explicando el procedimiento. Formatea la respuesta con encabezados para cada paso y usa delimitadores de $$ para todas las expresiones matemáticas.`;
+                
+                try {
+                    const result = await callGemini(prompt);
+                    if (result && result.candidates?.[0]?.content?.parts?.[0]?.text) {
+                        resultContainer.innerHTML = result.candidates[0].content.parts[0].text.replace(/\n/g, '<br>');
+                        renderMath(resultContainer);
+                    } else {
+                        resultContainer.innerHTML = `<p class="text-red-500">No se pudo resolver la ecuación. Verifica que esté bien escrita o prueba con otro método.</p>`;
+                    }
+                } catch(error) {
+                    handleApiError(error, resultContainer);
+                } finally {
+                    btn.disabled = false;
+                }
+            });
             
-            // Event Listener for Gemini Application Button
+            // --- Event Listener for Applications Finder ---
             document.getElementById('gemini-app-btn').addEventListener('click', async () => {
-                const query = document.getElementById('app-query-input').value.trim();
                 const btn = document.getElementById('gemini-app-btn');
+                const query = document.getElementById('app-query-input').value.trim();
                 if (!query) {
                     alert("Por favor, introduce un campo de estudio.");
                     return;
@@ -459,31 +647,36 @@
                 
                 const prompt = `Busca y explica brevemente una aplicación del mundo real de las ecuaciones diferenciales de primer orden en el campo de "${query}". Describe el escenario, la ecuación que lo modela y qué representa.`;
                 
-                const result = await callGemini(prompt, true);
-
-                if (result && result.candidates?.[0]?.content?.parts?.[0]?.text) {
-                    let html = `<p>${result.candidates[0].content.parts[0].text.replace(/\n/g, '<br>')}</p>`;
-                    
-                    const groundingMetadata = result.candidates[0]?.groundingMetadata;
-                    if (groundingMetadata?.groundingAttributions?.length > 0) {
-                        html += `<h4 class="font-semibold mt-4 mb-2">Fuentes:</h4><ul class="list-disc list-inside text-sm">`;
-                        groundingMetadata.groundingAttributions.forEach(attr => {
-                            if (attr.web?.uri) {
-                                html += `<li><a href="${attr.web.uri}" target="_blank" class="text-teal-600 hover:underline">${attr.web.title || attr.web.uri}</a></li>`;
-                            }
-                        });
-                        html += `</ul>`;
+                try {
+                    const result = await callGemini(prompt, true);
+                    if (result && result.candidates?.[0]?.content?.parts?.[0]?.text) {
+                        let html = `<p>${result.candidates[0].content.parts[0].text.replace(/\n/g, '<br>')}</p>`;
+                        
+                        const groundingMetadata = result.candidates[0]?.groundingMetadata;
+                        if (groundingMetadata?.groundingAttributions?.length > 0) {
+                            html += `<h4 class="font-semibold mt-4 mb-2">Fuentes:</h4><ul class="list-disc list-inside text-sm">`;
+                            groundingMetadata.groundingAttributions.forEach(attr => {
+                                if (attr.web?.uri) {
+                                    html += `<li><a href="${attr.web.uri}" target="_blank" class="text-teal-600 hover:underline">${attr.web.title || attr.web.uri}</a></li>`;
+                                }
+                            });
+                            html += `</ul>`;
+                        }
+                        resultContainer.innerHTML = html;
+                        renderMath(resultContainer);
+                    } else {
+                        resultContainer.innerHTML = `<p class="text-red-500">No se pudo encontrar una aplicación. Intenta con otro término.</p>`;
                     }
-                    resultContainer.innerHTML = html;
-                } else {
-                    resultContainer.innerHTML = `<p class="text-red-500">No se pudo encontrar una aplicación. Intenta con otro término.</p>`;
+                } catch(error) {
+                    handleApiError(error, resultContainer);
+                } finally {
+                    btn.disabled = false;
                 }
-                btn.disabled = false;
             });
+
+            initializeApp();
         });
     </script>
 </body>
 </html>
-
-
 
