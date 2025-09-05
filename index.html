@@ -18,11 +18,6 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
 
-
-    <!-- Chosen Palette: Calm Harmony -->
-    <!-- Application Structure Plan: Se ha diseñado una aplicación de una sola página con una navegación superior basada en pestañas. Cada pestaña corresponde a un método de resolución de EDOs de primer orden. Esta estructura de "dashboard" o "caja de herramientas" es ideal para una guía de estudio, ya que permite al usuario acceder directamente al tema de interés sin necesidad de desplazarse por contenido irrelevante. El flujo es simple: el usuario selecciona un tipo de ecuación y la aplicación muestra instantáneamente la información relevante (identificación, método, fórmulas). Se eligió este diseño por ser altamente funcional y estar orientado a la tarea principal del usuario: identificar y resolver un problema específico rápidamente. -->
-    <!-- Visualization & Content Choices: El contenido de la guía de estudio es procedimental y basado en fórmulas, por lo que no se requieren gráficos o tablas de datos. La información se presenta utilizando una jerarquía clara con encabezados, listas ordenadas para los pasos de resolución y bloques de código estilizados para resaltar las fórmulas matemáticas. El objetivo es la claridad y la legibilidad. La interactividad principal es la navegación por pestañas, que permite al usuario controlar qué contenido se muestra. Esta elección de presentación directa y estructurada con HTML/Tailwind es la más efectiva para comunicar esta información técnica. -->
-    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -348,727 +343,728 @@
         import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc, updateDoc, increment, collection, getDocs, serverTimestamp, query, where, deleteDoc } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
 
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        
-        // --- Main App Logic ---
-        const contentData = {
-                separables: {
-                    name: "Variables Separables",
-                    title: "1. Ecuaciones de Variables Separables",
-                    description: "Son el tipo más sencillo. La estrategia es aislar cada variable a un lado de la ecuación para poder integrar.",
-                    content: `
-                        <div class="grid md:grid-cols-2 gap-6">
-                            <div>
-                                <h3 class="text-xl font-semibold mb-2">Identificación</h3>
-                                <p class="mb-3">La ecuación se puede reescribir algebraicamente en la siguiente forma:</p>
-                                <div class="formula-block">$$ g(y) dy = f(x) dx $$</div>
-                            </div>
-                            <div>
-                                <h3 class="text-xl font-semibold mb-2">Método de Solución</h3>
-                                <p class="mb-3">Una vez separadas las variables, se integra cada lado de la ecuación de forma independiente.</p>
-                                <div class="formula-block">$$ \\int g(y) dy = \\int f(x) dx + C $$</div>
-                            </div>
-                        </div>`,
-                    prompt: "Genera un ejemplo de una ecuación diferencial de primer orden de variables separables en la forma g(y)dy = f(x)dx. Proporciona solo la ecuación. Usa funciones comunes como polinomios, sin, cos o e^x. Usa delimitadores de $$ para la matemática."
-                },
-                homogeneas: {
-                    name: "Homogéneas",
-                    title: "2. Ecuaciones Homogéneas",
-                    description: "Estas ecuaciones se caracterizan porque todos sus términos tienen el mismo grado. Se resuelven con una sustitución que las convierte en ecuaciones de variables separables.",
-                    content: `<h3 class="text-xl font-semibold mb-2">Identificación</h3><p class="mb-3">La ecuación se puede expresar en función del cociente y/x:</p><div class="formula-block mb-6">$$ \\frac{dy}{dx} = F(\\frac{y}{x}) $$</div><h3 class="text-xl font-semibold mb-2">Método de Solución</h3><ol class="list-decimal list-inside space-y-4"><li><span class="font-semibold">Sustitución clave:</span> $$ v = y/x \\rightarrow y = vx $$</li><li><span class="font-semibold">Derivar y reemplazar:</span> $$ \\frac{dy}{dx} = v + x \\frac{dv}{dx} $$</li><li><span class="font-semibold">Resolver la nueva ecuación</span> de variables separables.</li><li><span class="font-semibold">Revertir la sustitución:</span> Se reemplaza $$ v = y/x $$.</li></ol>`,
-                    prompt: "Genera un ejemplo de una ecuación diferencial homogénea de primer orden en la forma dy/dx = F(y/x). Proporciona solo la ecuación. Asegúrate de que F(y/x) sea una función de la relación y/x. Usa delimitadores de $$ para la matemática."
-                },
-                 exactas: {
-                    name: "Exactas",
-                    title: "3. Ecuaciones Exactas",
-                    description: `Provienen de la diferenciación total de una función F(x, y). La clave es verificar primero la "condición de exactitud".`,
-                    content: `<h3 class="text-xl font-semibold mb-2">Identificación</h3><div class="formula-block mb-6">$$ M(x, y) dx + N(x, y) dy = 0 $$</div><h3 class="text-xl font-semibold mb-2">Condición de Exactitud</h3><div class="formula-block mb-6">$$ \\frac{\\partial M}{\\partial y} = \\frac{\\partial N}{\\partial x} $$</div><h3 class="text-xl font-semibold mb-2">Método de Solución</h3><p class="mb-3">La solución es $$ F(x, y) = C $$. Se encuentra integrando M respecto a x, derivando respecto a y, e igualando a N para hallar la función constante g(y).</p>`,
-                    prompt: "Genera un ejemplo de una ecuación diferencial exacta de primer orden en la forma M(x, y)dx + N(x, y)dy = 0. Proporciona solo la ecuación. Asegúrate de que cumpla la condición de exactitud ∂M/∂y = ∂N/∂x. Usa delimitadores de $$ para la matemática."
-                },
-                lineales: {
-                    name: "Lineales",
-                    title: "4. Ecuaciones Lineales",
-                    description: `Estas ecuaciones tienen una estructura muy definida. Se resuelven con un "factor integrante" que las hace fácilmente integrables.`,
-                    content: `<h3 class="text-xl font-semibold mb-2">Identificación (Forma Estándar)</h3><div class="formula-block mb-6">$$ \\frac{dy}{dx} + P(x)y = Q(x) $$</div><h3 class="text-xl font-semibold mb-2">Método de Solución</h3><ol class="list-decimal list-inside space-y-4"><li><span class="font-semibold">Calcular Factor Integrante ($$\\mu$$):</span><div class="formula-block mt-2">$$\\mu(x) = e^{\\int P(x)dx}$$</div></li><li><span class="font-semibold">Aplicar fórmula de solución:</span><div class="formula-block mt-2">$$ y \\cdot \\mu(x) = \\int Q(x) \\cdot \\mu(x) dx + C $$</div></li><li><span class="font-semibold">Despejar y.</span></li></ol>`,
-                    prompt: "Genera un ejemplo de una ecuación diferencial lineal de primer orden en la forma dy/dx + P(x)y = Q(x). Proporciona solo la ecuación. Usa funciones P(x) y Q(x) que sean integrables. Usa delimitadores de $$ para la matemática."
-                },
-                bernoulli: {
-                    name: "de Bernoulli",
-                    title: "5. Ecuación de Bernoulli",
-                    description: "Son ecuaciones no lineales que se parecen mucho a las lineales. Una sustitución inteligente las transforma en una ecuación lineal que ya sabemos resolver.",
-                    content: `<h3 class="text-xl font-semibold mb-2">Identificación</h3><div class="formula-block mb-6">$$ \\frac{dy}{dx} + P(x)y = Q(x)y^n $$</div><h3 class="text-xl font-semibold mb-2">Método de Solución</h3><ol class="list-decimal list-inside space-y-4"><li><span class="font-semibold">Sustitución clave:</span><div class="formula-block mt-2">$$ v = y^{1-n} $$</div></li><li><span class="font-semibold">Transformar a ecuación lineal:</span><div class="formula-block mt-2">$$ \\frac{dv}{dx} + (1-n)P(x)v = (1-n)Q(x) $$</div></li><li><span class="font-semibold">Resolver la ecuación lineal para 'v'.</span></li><li><span class="font-semibold">Revertir la sustitución.</span></li></ol>`,
-                    prompt: "Genera un ejemplo de una ecuación de Bernoulli de primer orden en la forma dy/dx + P(x)y = Q(x)y^n, donde n no es 0 ni 1. Proporciona solo la ecuación. Usa delimitadores de $$ para la matemática."
-                },
-                coeficientes: {
-                    name: "con Coeficientes Lineales",
-                    title: "6. Ecuaciones con Coeficientes Lineales",
-                    description: "La forma de esta ecuación involucra dos líneas rectas. El método de solución depende de si estas líneas se cruzan o son paralelas.",
-                    content: `<h3 class="text-xl font-semibold mb-2">Identificación</h3><div class="formula-block mb-6">$$ (a_1x + b_1y + c_1)dx + (a_2x + b_2y + c_2)dy = 0 $$</div><h3 class="text-xl font-semibold mb-2">Análisis de Casos</h3><p class="mb-4">Se debe calcular el determinante $$a_1b_2 - a_2b_1$$.</p><div class="grid md:grid-cols-2 gap-6"><div class="border border-slate-200 rounded-lg p-4"><h4 class="font-semibold text-lg mb-2">Caso 1: Líneas se cruzan ($$\\neq 0$$)</h4><p>Se usa la sustitución $$ x = u + h, y = v + k $$ para convertirla en una homogénea.</p></div><div class="border border-slate-200 rounded-lg p-4"><h4 class="font-semibold text-lg mb-2">Caso 2: Líneas paralelas ($$= 0$$)</h4><p>Se usa la sustitución $$ z = a_1x + b_1y $$ para convertirla en una de variables separables.</p></div></div>`,
-                    prompt: "Genera un ejemplo de una ecuación diferencial con coeficientes lineales en la forma (a1x + b1y + c1)dx + (a2x + b2y + c2)dy = 0. Proporciona solo la ecuación. Usa delimitadores de $$ para la matemática."
-                }
-            };
-
-            const identificationGuideContent = `
-                <div class="p-4 border border-slate-200 rounded-lg">
-                    <h3 class="font-bold text-lg text-teal-700">1. Variables Separables</h3>
-                    <p class="mt-1 mb-2 text-slate-600"><span class="font-semibold">La Pista Clave:</span> ¿Puedes manipular algebraicamente la ecuación para que todos los términos con 'y' y 'dy' queden de un lado y todos los términos con 'x' y 'dx' del otro?</p>
-                    <div class="formula-block text-sm">Ejemplo: $$ (x^2+1) \\frac{dy}{dx} = y $$ es separable porque se puede reescribir como $$ \\frac{1}{y} dy = \\frac{1}{x^2+1} dx $$.</div>
-                </div>
-                 <div class="p-4 border border-slate-200 rounded-lg">
-                    <h3 class="font-bold text-lg text-teal-700">2. Ecuaciones Lineales</h3>
-                    <p class="mt-1 mb-2 text-slate-600"><span class="font-semibold">La Pista Clave:</span> ¿Tiene la estructura rígida $$ \\frac{dy}{dx} + P(x)y = Q(x) $$? La variable 'y' y su derivada deben tener exponente 1.</p>
-                    <div class="formula-block text-sm">Ejemplo: $$ \\frac{dy}{dx} + (2x)y = x^2 $$ es lineal. Aquí, $$ P(x) = 2x $$ y $$ Q(x) = x^2 $$.</div>
-                </div>
-                 <div class="p-4 border border-slate-200 rounded-lg">
-                    <h3 class="font-bold text-lg text-teal-700">3. Ecuación de Bernoulli</h3>
-                    <p class="mt-1 mb-2 text-slate-600"><span class="font-semibold">La Pista Clave:</span> Es casi lineal, pero tiene un término $$y^n$$ extra multiplicando al lado derecho.</p>
-                    <div class="formula-block text-sm">Ejemplo: $$ \\frac{dy}{dx} + \\frac{1}{x}y = x y^2 $$ es una ecuación de Bernoulli con n=2. Si no estuviera el $$ y^2 $$, sería lineal.</div>
-                </div>
-                 <div class="p-4 border border-slate-200 rounded-lg">
-                    <h3 class="font-bold text-lg text-teal-700">4. Ecuaciones Exactas</h3>
-                    <p class="mt-1 mb-2 text-slate-600"><span class="font-semibold">La Pista Clave:</span> Viene en la forma $$ M(x, y)dx + N(x, y)dy = 0 $$. Si no es separable, lineal o de Bernoulli, el siguiente paso es probar la condición de exactitud: $$ \\frac{\\partial M}{\\partial y} = \\frac{\\partial N}{\\partial x} $$</p>
-                    <div class="formula-block text-sm">Ejemplo: $$ (2xy)dx + (x^2 - 1)dy = 0 $$. Aquí, $$ M = 2xy $$ y $$ N = x^2-1 $$. Como $$ \\frac{\\partial M}{\\partial y} = 2x $$ y $$ \\frac{\\partial N}{\\partial x} = 2x $$, es exacta.</div>
-                </div>
-                 <div class="p-4 border border-slate-200 rounded-lg">
-                    <h3 class="font-bold text-lg text-teal-700">5. Ecuaciones Homogéneas</h3>
-                    <p class="mt-1 mb-2 text-slate-600"><span class="font-semibold">La Pista Clave:</span> Todos los términos tienen el mismo "grado" (la suma de los exponentes de x e y). O, equivalentemente, la ecuación se puede reescribir como $$ \\frac{dy}{dx} = F(\\frac{y}{x}) $$.</p>
-                    <div class="formula-block text-sm">Ejemplo: $$ (x^2 + y^2)dx + 2xy dy = 0 $$. Cada término ($$x^2, y^2, 2xy$$) es de grado 2.</div>
-                </div>
-            `;
-            document.getElementById('identification-guide-content').innerHTML = identificationGuideContent;
-
-
-            // --- ⚠️ CRITICAL API KEY CONFIGURATION ---
-            const apiKey = "AIzaSyCl3DHOrqxjQEptoFMttbVsRtiEFAoAlGU"; 
-            // -----------------------------------------
-
-            const mainContainer = document.querySelector('main');
-            const template = document.getElementById('method-template');
-
-            const customMethodSelect = document.getElementById('custom-method-select');
-            Object.keys(contentData).forEach(key => {
-                const section = document.getElementById(key);
-                const data = contentData[key];
-                
-                if(section){
-                    section.dataset.methodName = data.name;
-                    let content = `
-                        <h2 class="text-2xl font-bold mb-4 text-teal-700">${data.title}</h2>
-                        <p class="mb-6 text-slate-600">${data.description}</p>
-                        ${data.content}`;
+        // This listener ensures the entire DOM is ready before any script logic runs.
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize Firebase
+            const app = initializeApp(firebaseConfig);
+            const auth = getAuth(app);
+            const db = getFirestore(app);
+            
+            // --- Main App Logic ---
+            const contentData = {
+                    separables: {
+                        name: "Variables Separables",
+                        title: "1. Ecuaciones de Variables Separables",
+                        description: "Son el tipo más sencillo. La estrategia es aislar cada variable a un lado de la ecuación para poder integrar.",
+                        content: `
+                            <div class="grid md:grid-cols-2 gap-6">
+                                <div>
+                                    <h3 class="text-xl font-semibold mb-2">Identificación</h3>
+                                    <p class="mb-3">La ecuación se puede reescribir algebraicamente en la siguiente forma:</p>
+                                    <div class="formula-block">$$ g(y) dy = f(x) dx $$</div>
+                                </div>
+                                <div>
+                                    <h3 class="text-xl font-semibold mb-2">Método de Solución</h3>
+                                    <p class="mb-3">Una vez separadas las variables, se integra cada lado de la ecuación de forma independiente.</p>
+                                    <div class="formula-block">$$ \\int g(y) dy = \\int f(x) dx + C $$</div>
+                                </div>
+                            </div>`,
+                        prompt: "Genera un ejemplo de una ecuación diferencial de primer orden de variables separables en la forma g(y)dy = f(x)dx. Proporciona solo la ecuación. Usa funciones comunes como polinomios, sin, cos o e^x. Usa delimitadores de $$ para la matemática."
+                    },
+                    homogeneas: {
+                        name: "Homogéneas",
+                        title: "2. Ecuaciones Homogéneas",
+                        description: "Estas ecuaciones se caracterizan porque todos sus términos tienen el mismo grado. Se resuelven con una sustitución que las convierte en ecuaciones de variables separables.",
+                        content: `<h3 class="text-xl font-semibold mb-2">Identificación</h3><p class="mb-3">La ecuación se puede expresar en función del cociente y/x:</p><div class="formula-block mb-6">$$ \\frac{dy}{dx} = F(\\frac{y}{x}) $$</div><h3 class="text-xl font-semibold mb-2">Método de Solución</h3><ol class="list-decimal list-inside space-y-4"><li><span class="font-semibold">Sustitución clave:</span> $$ v = y/x \\rightarrow y = vx $$</li><li><span class="font-semibold">Derivar y reemplazar:</span> $$ \\frac{dy}{dx} = v + x \\frac{dv}{dx} $$</li><li><span class="font-semibold">Resolver la nueva ecuación</span> de variables separables.</li><li><span class="font-semibold">Revertir la sustitución:</span> Se reemplaza $$ v = y/x $$.</li></ol>`,
+                        prompt: "Genera un ejemplo de una ecuación diferencial homogénea de primer orden en la forma dy/dx = F(y/x). Proporciona solo la ecuación. Asegúrate de que F(y/x) sea una función de la relación y/x. Usa delimitadores de $$ para la matemática."
+                    },
+                     exactas: {
+                        name: "Exactas",
+                        title: "3. Ecuaciones Exactas",
+                        description: `Provienen de la diferenciación total de una función F(x, y). La clave es verificar primero la "condición de exactitud".`,
+                        content: `<h3 class="text-xl font-semibold mb-2">Identificación</h3><div class="formula-block mb-6">$$ M(x, y) dx + N(x, y) dy = 0 $$</div><h3 class="text-xl font-semibold mb-2">Condición de Exactitud</h3><div class="formula-block mb-6">$$ \\frac{\\partial M}{\\partial y} = \\frac{\\partial N}{\\partial x} $$</div><h3 class="text-xl font-semibold mb-2">Método de Solución</h3><p class="mb-3">La solución es $$ F(x, y) = C $$. Se encuentra integrando M respecto a x, derivando respecto a y, e igualando a N para hallar la función constante g(y).</p>`,
+                        prompt: "Genera un ejemplo de una ecuación diferencial exacta de primer orden en la forma M(x, y)dx + N(x, y)dy = 0. Proporciona solo la ecuación. Asegúrate de que cumpla la condición de exactitud ∂M/∂y = ∂N/∂x. Usa delimitadores de $$ para la matemática."
+                    },
+                    lineales: {
+                        name: "Lineales",
+                        title: "4. Ecuaciones Lineales",
+                        description: `Estas ecuaciones tienen una estructura muy definida. Se resuelven con un "factor integrante" que las hace fácilmente integrables.`,
+                        content: `<h3 class="text-xl font-semibold mb-2">Identificación (Forma Estándar)</h3><div class="formula-block mb-6">$$ \\frac{dy}{dx} + P(x)y = Q(x) $$</div><h3 class="text-xl font-semibold mb-2">Método de Solución</h3><ol class="list-decimal list-inside space-y-4"><li><span class="font-semibold">Calcular Factor Integrante ($$\\mu$$):</span><div class="formula-block mt-2">$$\\mu(x) = e^{\\int P(x)dx}$$</div></li><li><span class="font-semibold">Aplicar fórmula de solución:</span><div class="formula-block mt-2">$$ y \\cdot \\mu(x) = \\int Q(x) \\cdot \\mu(x) dx + C $$</div></li><li><span class="font-semibold">Despejar y.</span></li></ol>`,
+                        prompt: "Genera un ejemplo de una ecuación diferencial lineal de primer orden en la forma dy/dx + P(x)y = Q(x). Proporciona solo la ecuación. Usa funciones P(x) y Q(x) que sean integrables. Usa delimitadores de $$ para la matemática."
+                    },
+                    bernoulli: {
+                        name: "de Bernoulli",
+                        title: "5. Ecuación de Bernoulli",
+                        description: "Son ecuaciones no lineales que se parecen mucho a las lineales. Una sustitución inteligente las transforma en una ecuación lineal que ya sabemos resolver.",
+                        content: `<h3 class="text-xl font-semibold mb-2">Identificación</h3><div class="formula-block mb-6">$$ \\frac{dy}{dx} + P(x)y = Q(x)y^n $$</div><h3 class="text-xl font-semibold mb-2">Método de Solución</h3><ol class="list-decimal list-inside space-y-4"><li><span class="font-semibold">Sustitución clave:</span><div class="formula-block mt-2">$$ v = y^{1-n} $$</div></li><li><span class="font-semibold">Transformar a ecuación lineal:</span><div class="formula-block mt-2">$$ \\frac{dv}{dx} + (1-n)P(x)v = (1-n)Q(x) $$</div></li><li><span class="font-semibold">Resolver la ecuación lineal para 'v'.</span></li><li><span class="font-semibold">Revertir la sustitución.</span></li></ol>`,
+                        prompt: "Genera un ejemplo de una ecuación de Bernoulli de primer orden en la forma dy/dx + P(x)y = Q(x)y^n, donde n no es 0 ni 1. Proporciona solo la ecuación. Usa delimitadores de $$ para la matemática."
+                    },
+                    coeficientes: {
+                        name: "con Coeficientes Lineales",
+                        title: "6. Ecuaciones con Coeficientes Lineales",
+                        description: "La forma de esta ecuación involucra dos líneas rectas. El método de solución depende de si estas líneas se cruzan o son paralelas.",
+                        content: `<h3 class="text-xl font-semibold mb-2">Identificación</h3><div class="formula-block mb-6">$$ (a_1x + b_1y + c_1)dx + (a_2x + b_2y + c_2)dy = 0 $$</div><h3 class="text-xl font-semibold mb-2">Análisis de Casos</h3><p class="mb-4">Se debe calcular el determinante $$a_1b_2 - a_2b_1$$.</p><div class="grid md:grid-cols-2 gap-6"><div class="border border-slate-200 rounded-lg p-4"><h4 class="font-semibold text-lg mb-2">Caso 1: Líneas se cruzan ($$\\neq 0$$)</h4><p>Se usa la sustitución $$ x = u + h, y = v + k $$ para convertirla en una homogénea.</p></div><div class="border border-slate-200 rounded-lg p-4"><h4 class="font-semibold text-lg mb-2">Caso 2: Líneas paralelas ($$= 0$$)</h4><p>Se usa la sustitución $$ z = a_1x + b_1y $$ para convertirla en una de variables separables.</p></div></div>`,
+                        prompt: "Genera un ejemplo de una ecuación diferencial con coeficientes lineales en la forma (a1x + b1y + c1)dx + (a2x + b2y + c2)dy = 0. Proporciona solo la ecuación. Usa delimitadores de $$ para la matemática."
+                    }
+                };
+    
+                const identificationGuideContent = `
+                    <div class="p-4 border border-slate-200 rounded-lg">
+                        <h3 class="font-bold text-lg text-teal-700">1. Variables Separables</h3>
+                        <p class="mt-1 mb-2 text-slate-600"><span class="font-semibold">La Pista Clave:</span> ¿Puedes manipular algebraicamente la ecuación para que todos los términos con 'y' y 'dy' queden de un lado y todos los términos con 'x' y 'dx' del otro?</p>
+                        <div class="formula-block text-sm">Ejemplo: $$ (x^2+1) \\frac{dy}{dx} = y $$ es separable porque se puede reescribir como $$ \\frac{1}{y} dy = \\frac{1}{x^2+1} dx $$.</div>
+                    </div>
+                     <div class="p-4 border border-slate-200 rounded-lg">
+                        <h3 class="font-bold text-lg text-teal-700">2. Ecuaciones Lineales</h3>
+                        <p class="mt-1 mb-2 text-slate-600"><span class="font-semibold">La Pista Clave:</span> ¿Tiene la estructura rígida $$ \\frac{dy}{dx} + P(x)y = Q(x) $$? La variable 'y' y su derivada deben tener exponente 1.</p>
+                        <div class="formula-block text-sm">Ejemplo: $$ \\frac{dy}{dx} + (2x)y = x^2 $$ es lineal. Aquí, $$ P(x) = 2x $$ y $$ Q(x) = x^2 $$.</div>
+                    </div>
+                     <div class="p-4 border border-slate-200 rounded-lg">
+                        <h3 class="font-bold text-lg text-teal-700">3. Ecuación de Bernoulli</h3>
+                        <p class="mt-1 mb-2 text-slate-600"><span class="font-semibold">La Pista Clave:</span> Es casi lineal, pero tiene un término $$y^n$$ extra multiplicando al lado derecho.</p>
+                        <div class="formula-block text-sm">Ejemplo: $$ \\frac{dy}{dx} + \\frac{1}{x}y = x y^2 $$ es una ecuación de Bernoulli con n=2. Si no estuviera el $$ y^2 $$, sería lineal.</div>
+                    </div>
+                     <div class="p-4 border border-slate-200 rounded-lg">
+                        <h3 class="font-bold text-lg text-teal-700">4. Ecuaciones Exactas</h3>
+                        <p class="mt-1 mb-2 text-slate-600"><span class="font-semibold">La Pista Clave:</span> Viene en la forma $$ M(x, y)dx + N(x, y)dy = 0 $$. Si no es separable, lineal o de Bernoulli, el siguiente paso es probar la condición de exactitud: $$ \\frac{\\partial M}{\\partial y} = \\frac{\\partial N}{\\partial x} $$</p>
+                        <div class="formula-block text-sm">Ejemplo: $$ (2xy)dx + (x^2 - 1)dy = 0 $$. Aquí, $$ M = 2xy $$ y $$ N = x^2-1 $$. Como $$ \\frac{\\partial M}{\\partial y} = 2x $$ y $$ \\frac{\\partial N}{\\partial x} = 2x $$, es exacta.</div>
+                    </div>
+                     <div class="p-4 border border-slate-200 rounded-lg">
+                        <h3 class="font-bold text-lg text-teal-700">5. Ecuaciones Homogéneas</h3>
+                        <p class="mt-1 mb-2 text-slate-600"><span class="font-semibold">La Pista Clave:</span> Todos los términos tienen el mismo "grado" (la suma de los exponentes de x e y). O, equivalentemente, la ecuación se puede reescribir como $$ \\frac{dy}{dx} = F(\\frac{y}{x}) $$.</p>
+                        <div class="formula-block text-sm">Ejemplo: $$ (x^2 + y^2)dx + 2xy dy = 0 $$. Cada término ($$x^2, y^2, 2xy$$) es de grado 2.</div>
+                    </div>
+                `;
+                document.getElementById('identification-guide-content').innerHTML = identificationGuideContent;
+    
+    
+                // --- ⚠️ CRITICAL API KEY CONFIGURATION ---
+                const apiKey = "AIzaSyCl3DHOrqxjQEptoFMttbVsRtiEFAoAlGU"; 
+                // -----------------------------------------
+    
+                const mainContainer = document.querySelector('main');
+                const template = document.getElementById('method-template');
+    
+                const customMethodSelect = document.getElementById('custom-method-select');
+                Object.keys(contentData).forEach(key => {
+                    const section = document.getElementById(key);
+                    const data = contentData[key];
                     
-                    const geminiBlock = template.content.cloneNode(true);
-                    geminiBlock.querySelector('.gemini-example-btn').dataset.prompt = data.prompt;
-                    section.innerHTML = content;
-                    section.appendChild(geminiBlock);
-                }
-
-                const option = document.createElement('option');
-                option.value = data.name;
-                option.textContent = data.title.split('. ')[1]; 
-                customMethodSelect.appendChild(option);
-            });
-            
-            const applicationsContent = document.getElementById('applications-content');
-            applicationsContent.innerHTML = `
-                <div><h3 class="text-xl font-semibold mb-2">Crecimiento y Decaimiento Exponencial</h3><p class="mb-3">Describe fenómenos donde la tasa de cambio de una cantidad es proporcional a la cantidad misma.</p><div class="formula-block mb-3">$$ \\frac{dy}{dt} = ky $$</div></div>
-                <div><h3 class="text-xl font-semibold mb-2">Ley de Enfriamiento de Newton</h3><p class="mb-3">La tasa a la que un objeto cambia de temperatura es proporcional a la diferencia entre su temperatura y la del ambiente.</p><div class="formula-block mb-3">$$ \\frac{dT}{dt} = k(T - T_a) $$</div></div>
-                <div><h3 class="text-xl font-semibold mb-2">Problemas de Mezclas</h3><p class="mb-3">Modelan la cantidad de una sustancia en un tanque donde un fluido entra y sale.</p><div class="formula-block mb-3">$$ \\frac{dA}{dt} = (\\text{tasa entrada}) - (\\text{tasa salida}) $$</div></div>
-                <div><h3 class="text-xl font-semibold mb-2">Circuitos Eléctricos RL en Serie</h3><p class="mb-3">Describe la corriente en un circuito simple con una resistencia, un inductor y una fuente de voltaje.</p><div class="formula-block mb-3">$$ L \\frac{dI}{dt} + RI = V(t) $$</div></div>`;
-            
-            const navButtons = document.querySelectorAll('.nav-btn');
-            const contentSections = document.querySelectorAll('.content-section');
-            navButtons.forEach(button => {
-                button.addEventListener('click', () => {
-                    const targetId = button.getAttribute('data-target');
-                    navButtons.forEach(btn => btn.classList.remove('active'));
-                    button.classList.add('active');
-                    contentSections.forEach(section => section.classList.toggle('active', section.id === targetId));
+                    if(section){
+                        section.dataset.methodName = data.name;
+                        let content = `
+                            <h2 class="text-2xl font-bold mb-4 text-teal-700">${data.title}</h2>
+                            <p class="mb-6 text-slate-600">${data.description}</p>
+                            ${data.content}`;
+                        
+                        const geminiBlock = template.content.cloneNode(true);
+                        geminiBlock.querySelector('.gemini-example-btn').dataset.prompt = data.prompt;
+                        section.innerHTML = content;
+                        section.appendChild(geminiBlock);
+                    }
+    
+                    const option = document.createElement('option');
+                    option.value = data.name;
+                    option.textContent = data.title.split('. ')[1]; 
+                    customMethodSelect.appendChild(option);
                 });
-            });
-            
-            function renderMath(container) {
-                 if (window.renderMathInElement) {
-                    window.renderMathInElement(container, {
-                        delimiters: [
-                            {left: "$$", right: "$$", display: true},
-                            {left: "$", right: "$", display: false}
-                        ]
+                
+                const applicationsContent = document.getElementById('applications-content');
+                applicationsContent.innerHTML = `
+                    <div><h3 class="text-xl font-semibold mb-2">Crecimiento y Decaimiento Exponencial</h3><p class="mb-3">Describe fenómenos donde la tasa de cambio de una cantidad es proporcional a la cantidad misma.</p><div class="formula-block mb-3">$$ \\frac{dy}{dt} = ky $$</div></div>
+                    <div><h3 class="text-xl font-semibold mb-2">Ley de Enfriamiento de Newton</h3><p class="mb-3">La tasa a la que un objeto cambia de temperatura es proporcional a la diferencia entre su temperatura y la del ambiente.</p><div class="formula-block mb-3">$$ \\frac{dT}{dt} = k(T - T_a) $$</div></div>
+                    <div><h3 class="text-xl font-semibold mb-2">Problemas de Mezclas</h3><p class="mb-3">Modelan la cantidad de una sustancia en un tanque donde un fluido entra y sale.</p><div class="formula-block mb-3">$$ \\frac{dA}{dt} = (\\text{tasa entrada}) - (\\text{tasa salida}) $$</div></div>
+                    <div><h3 class="text-xl font-semibold mb-2">Circuitos Eléctricos RL en Serie</h3><p class="mb-3">Describe la corriente en un circuito simple con una resistencia, un inductor y una fuente de voltaje.</p><div class="formula-block mb-3">$$ L \\frac{dI}{dt} + RI = V(t) $$</div></div>`;
+                
+                const navButtons = document.querySelectorAll('.nav-btn');
+                const contentSections = document.querySelectorAll('.content-section');
+                navButtons.forEach(button => {
+                    button.addEventListener('click', () => {
+                        const targetId = button.getAttribute('data-target');
+                        navButtons.forEach(btn => btn.classList.remove('active'));
+                        button.classList.add('active');
+                        contentSections.forEach(section => section.classList.toggle('active', section.id === targetId));
                     });
+                });
+                
+                function renderMath(container) {
+                     if (window.renderMathInElement) {
+                        window.renderMathInElement(container, {
+                            delimiters: [
+                                {left: "$$", right: "$$", display: true},
+                                {left: "$", right: "$", display: false}
+                            ]
+                        });
+                    }
                 }
-            }
-
-            // --- App Initialization ---
-            let sessionStartTime = Date.now();
-            let visitsByDayChart, visitsByMonthChart;
-
-
-            function mainApp() {
-                // UI Setup
-                document.querySelector('.nav-btn[data-target="custom-equation"]').click();
-                renderMath(document.body);
-
-                // Config Checks
-                if (!apiKey) {
-                    document.getElementById('api-key-alert').classList.remove('hidden');
-                    document.querySelectorAll('.gemini-btn').forEach(btn => btn.disabled = true);
+    
+                // --- App Initialization ---
+                let sessionStartTime = Date.now();
+                let visitsByDayChart, visitsByMonthChart;
+    
+    
+                function mainApp() {
+                    // UI Setup
+                    document.querySelector('.nav-btn[data-target="custom-equation"]').click();
+                    renderMath(document.body);
+    
+                    // Config Checks
+                    if (!apiKey) {
+                        document.getElementById('api-key-alert').classList.remove('hidden');
+                        document.querySelectorAll('.gemini-btn').forEach(btn => btn.disabled = true);
+                    }
+                    if (!app.options.apiKey || app.options.apiKey === "TU_API_KEY_DE_FIREBASE") {
+                         document.getElementById('firebase-config-alert').classList.remove('hidden');
+                         document.getElementById('profile-button').disabled = true;
+                    }
+                    
+                    // Analytics
+                    trackVisit();
+                    window.addEventListener('beforeunload', trackSessionDuration);
+    
+                    // Auth
+                    onAuthStateChanged(auth, handleAuthStateChange);
                 }
-                if (!app.options.apiKey || app.options.apiKey === "TU_API_KEY_DE_FIREBASE") {
-                     document.getElementById('firebase-config-alert').classList.remove('hidden');
-                     document.getElementById('profile-button').disabled = true;
+    
+                // --- Analytics Logic ---
+                async function trackVisit() {
+                    const analyticsRef = doc(db, "analytics", "main");
+                    try {
+                        const docSnap = await getDoc(analyticsRef);
+                        if (docSnap.exists()) {
+                            let timestamps = docSnap.data().visitTimestamps || [];
+                            timestamps.push(serverTimestamp());
+                            if (timestamps.length > 500) {
+                                timestamps = timestamps.slice(timestamps.length - 500);
+                            }
+                            await updateDoc(analyticsRef, {
+                                totalVisits: increment(1),
+                                visitTimestamps: timestamps
+                            });
+                        } else {
+                             await setDoc(analyticsRef, { 
+                                totalVisits: 1, 
+                                totalSessionTime: 0, 
+                                sessionCount: 0,
+                                visitTimestamps: [serverTimestamp()]
+                            });
+                        }
+                    } catch (e) {
+                         console.error("Error tracking visit:", e);
+                    }
                 }
                 
-                // Analytics
-                trackVisit();
-                window.addEventListener('beforeunload', trackSessionDuration);
-
-                // Auth
-                onAuthStateChanged(auth, handleAuthStateChange);
-            }
-
-            // --- Analytics Logic ---
-            async function trackVisit() {
-                const analyticsRef = doc(db, "analytics", "main");
-                try {
-                    const docSnap = await getDoc(analyticsRef);
-                    if (docSnap.exists()) {
-                        let timestamps = docSnap.data().visitTimestamps || [];
-                        timestamps.push(serverTimestamp());
-                        if (timestamps.length > 500) {
-                            timestamps = timestamps.slice(timestamps.length - 500);
-                        }
-                        await updateDoc(analyticsRef, {
-                            totalVisits: increment(1),
-                            visitTimestamps: timestamps
+                async function trackSessionDuration() {
+                    const duration = Math.round((Date.now() - sessionStartTime) / 1000); // in seconds
+                    const analyticsRef = doc(db, "analytics/main");
+                    try {
+                         await updateDoc(analyticsRef, {
+                            totalSessionTime: increment(duration),
+                            sessionCount: increment(1)
                         });
-                    } else {
-                         await setDoc(analyticsRef, { 
-                            totalVisits: 1, 
-                            totalSessionTime: 0, 
-                            sessionCount: 0,
-                            visitTimestamps: [serverTimestamp()]
-                        });
-                    }
-                } catch (e) {
-                     console.error("Error tracking visit:", e);
-                }
-            }
-            
-            async function trackSessionDuration() {
-                const duration = Math.round((Date.now() - sessionStartTime) / 1000); // in seconds
-                const analyticsRef = doc(db, "analytics/main");
-                try {
-                     await updateDoc(analyticsRef, {
-                        totalSessionTime: increment(duration),
-                        sessionCount: increment(1)
-                    });
-                } catch (e) {
-                    console.error("Error tracking session duration:", e);
-                }
-            }
-
-
-            // --- Auth UI and State Management ---
-            const modal = document.getElementById('auth-modal');
-            const modalOverlay = document.getElementById('auth-modal-overlay');
-            const closeModalBtn = document.getElementById('close-modal-button');
-            const profileBtn = document.getElementById('profile-button');
-            const loginView = document.getElementById('login-view');
-            const registerView = document.getElementById('register-view');
-
-            const showRegisterBtn = document.getElementById('show-register-view');
-            const showLoginBtn = document.getElementById('show-login-view');
-
-            profileBtn.addEventListener('click', () => modal.classList.remove('hidden'));
-            closeModalBtn.addEventListener('click', () => modal.classList.add('hidden'));
-            modalOverlay.addEventListener('click', () => modal.classList.add('hidden'));
-            
-            showRegisterBtn.addEventListener('click', async () => {
-                loginView.classList.add('hidden');
-                registerView.classList.remove('hidden');
-                document.getElementById('register-info').textContent = "Regístrate aquí si has recibido una invitación de un administrador.";
-
-                // Check if any admin exists to determine if this is the first registration ever
-                const usersCol = collection(db, "users");
-                const q = query(usersCol, where("role", "in", ["superAdmin"]));
-                const querySnapshot = await getDocs(q);
-                 if (querySnapshot.empty) {
-                    document.getElementById('register-info').textContent += " ¡Parece que serás el primer Super Administrador!";
-                }
-            });
-            showLoginBtn.addEventListener('click', () => {
-                registerView.classList.add('hidden');
-                loginView.classList.remove('hidden');
-            });
-
-
-            async function handleAuthStateChange(user) {
-                const dashboardNavItem = document.getElementById('dashboard-nav-item');
-                const userManagementSection = document.getElementById('user-management-section');
-
-                if (user) {
-                    const userDocRef = doc(db, "users", user.uid);
-                    const userDoc = await getDoc(userDocRef);
-                    if (userDoc.exists() && (userDoc.data().role === 'admin' || userDoc.data().role === 'superAdmin')) {
-                        dashboardNavItem.classList.remove('hidden');
-                        if(userDoc.data().role === 'superAdmin') {
-                            userManagementSection.classList.remove('hidden');
-                        } else {
-                            userManagementSection.classList.add('hidden');
-                        }
-                        modal.classList.add('hidden');
-                        document.querySelector('.nav-btn[data-target="dashboard"]').click();
-                        loadDashboardData();
-                    } else {
-                        await signOut(auth);
-                    }
-                } else {
-                    dashboardNavItem.classList.add('hidden');
-                    userManagementSection.classList.add('hidden');
-                    if(document.querySelector('.nav-btn.active')?.getAttribute('data-target') === 'dashboard') {
-                       document.querySelector('.nav-btn[data-target="custom-equation"]').click();
+                    } catch (e) {
+                        console.error("Error tracking session duration:", e);
                     }
                 }
-            }
-
-
-            // --- Auth Actions ---
-            const loginBtn = document.getElementById('login-button');
-            loginBtn.addEventListener('click', async () => {
-                const email = document.getElementById('login-email').value;
-                const password = document.getElementById('login-password').value;
-                const errorP = document.getElementById('login-error');
-                try {
-                    errorP.textContent = '';
-                    await signInWithEmailAndPassword(auth, email, password);
-                } catch (error) {
-                    errorP.textContent = "Error: " + error.message;
-                }
-            });
-
-            const registerBtn = document.getElementById('register-button');
-            registerBtn.addEventListener('click', async () => {
-                const email = document.getElementById('register-email').value;
-                const password = document.getElementById('register-password').value;
-                const errorP = document.getElementById('register-error');
-                errorP.textContent = '';
-
-                try {
-                    // Check if user is the first ever, or is invited
+    
+    
+                // --- Auth UI and State Management ---
+                const modal = document.getElementById('auth-modal');
+                const modalOverlay = document.getElementById('auth-modal-overlay');
+                const closeModalBtn = document.getElementById('close-modal-button');
+                const profileBtn = document.getElementById('profile-button');
+                const loginView = document.getElementById('login-view');
+                const registerView = document.getElementById('register-view');
+    
+                const showRegisterBtn = document.getElementById('show-register-view');
+                const showLoginBtn = document.getElementById('show-login-view');
+    
+                profileBtn.addEventListener('click', () => modal.classList.remove('hidden'));
+                closeModalBtn.addEventListener('click', () => modal.classList.add('hidden'));
+                modalOverlay.addEventListener('click', () => modal.classList.add('hidden'));
+                
+                showRegisterBtn.addEventListener('click', async () => {
+                    loginView.classList.add('hidden');
+                    registerView.classList.remove('hidden');
+                    document.getElementById('register-info').textContent = "Regístrate aquí si has recibido una invitación de un administrador.";
+    
+                    // Check if any admin exists to determine if this is the first registration ever
                     const usersCol = collection(db, "users");
-                    const adminQuery = query(usersCol, where("role", "in", ["superAdmin"]));
-                    const adminSnapshot = await getDocs(adminQuery);
-                    let role = 'admin'; // Default role for invited user
-                    let isFirstAdmin = adminSnapshot.empty;
-                    
-                    if (isFirstAdmin) {
-                        role = 'superAdmin';
+                    const q = query(usersCol, where("role", "in", ["superAdmin"]));
+                    const querySnapshot = await getDocs(q);
+                     if (querySnapshot.empty) {
+                        document.getElementById('register-info').textContent += " ¡Parece que serás el primer Super Administrador!";
+                    }
+                });
+                showLoginBtn.addEventListener('click', () => {
+                    registerView.classList.add('hidden');
+                    loginView.classList.remove('hidden');
+                });
+    
+    
+                async function handleAuthStateChange(user) {
+                    const dashboardNavItem = document.getElementById('dashboard-nav-item');
+                    const userManagementSection = document.getElementById('user-management-section');
+    
+                    if (user) {
+                        const userDocRef = doc(db, "users", user.uid);
+                        const userDoc = await getDoc(userDocRef);
+                        if (userDoc.exists() && (userDoc.data().role === 'admin' || userDoc.data().role === 'superAdmin')) {
+                            dashboardNavItem.classList.remove('hidden');
+                            if(userDoc.data().role === 'superAdmin') {
+                                userManagementSection.classList.remove('hidden');
+                            } else {
+                                userManagementSection.classList.add('hidden');
+                            }
+                            modal.classList.add('hidden');
+                            document.querySelector('.nav-btn[data-target="dashboard"]').click();
+                            loadDashboardData();
+                        } else {
+                            await signOut(auth);
+                        }
                     } else {
-                        const invitationsCol = collection(db, "invitations");
-                        const inviteQuery = query(invitationsCol, where("email", "==", email));
-                        const inviteSnapshot = await getDocs(inviteQuery);
-                        if (inviteSnapshot.empty) {
-                            throw new Error("auth/no-invitation");
+                        dashboardNavItem.classList.add('hidden');
+                        userManagementSection.classList.add('hidden');
+                        if(document.querySelector('.nav-btn.active')?.getAttribute('data-target') === 'dashboard') {
+                           document.querySelector('.nav-btn[data-target="custom-equation"]').click();
                         }
                     }
-
-                    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-                    const user = userCredential.user;
-
-                    // Create user document
-                    await setDoc(doc(db, "users", user.uid), {
-                        email: user.email,
-                        role: role,
-                        createdAt: serverTimestamp()
-                    });
-
-                    // Delete invitation if it exists
-                    if (!isFirstAdmin) {
-                        const invitationsCol = collection(db, "invitations");
-                        const inviteQuery = query(invitationsCol, where("email", "==", email));
-                        const inviteSnapshot = await getDocs(inviteQuery);
-                        inviteSnapshot.forEach(async (inviteDoc) => {
-                            await deleteDoc(doc(db, "invitations", inviteDoc.id));
-                        });
-                    }
-
-                } catch (error) {
-                     if(error.message === "auth/no-invitation") {
-                        errorP.textContent = "Error: No tienes una invitación para registrarte.";
-                    } else {
+                }
+    
+    
+                // --- Auth Actions ---
+                const loginBtn = document.getElementById('login-button');
+                loginBtn.addEventListener('click', async () => {
+                    const email = document.getElementById('login-email').value;
+                    const password = document.getElementById('login-password').value;
+                    const errorP = document.getElementById('login-error');
+                    try {
+                        errorP.textContent = '';
+                        await signInWithEmailAndPassword(auth, email, password);
+                    } catch (error) {
                         errorP.textContent = "Error: " + error.message;
                     }
-                }
-            });
-            
-            const logoutBtn = document.getElementById('logout-button');
-            logoutBtn.addEventListener('click', async () => {
-                await signOut(auth);
-            });
-
-             const addAdminBtn = document.getElementById('add-admin-button');
-             addAdminBtn.addEventListener('click', async () => {
-                const email = document.getElementById('new-admin-email').value;
-                const feedbackP = document.getElementById('add-admin-feedback');
-                if(!email) {
-                    feedbackP.textContent = 'Por favor, introduce un email.';
-                    feedbackP.className = 'text-sm mt-2 text-red-500';
-                    return;
-                }
-                
-                try {
-                    await setDoc(doc(collection(db, "invitations")), {
-                        email: email,
-                        role: 'admin',
-                        invitedBy: auth.currentUser.uid,
-                        createdAt: serverTimestamp()
-                    });
-                    feedbackP.textContent = `Invitación enviada a ${email}. Ahora pueden registrarse.`;
-                    feedbackP.className = 'text-sm mt-2 text-green-600';
-                    document.getElementById('new-admin-email').value = '';
-                } catch (e) {
-                    feedbackP.textContent = 'Error al enviar la invitación.';
-                    feedbackP.className = 'text-sm mt-2 text-red-500';
-                    console.error("Error adding invitation: ", e);
-                }
-             });
-
-            // --- Dashboard Logic ---
-            async function loadDashboardData() {
-                const analyticsRef = doc(db, "analytics", "main");
-                const analyticsSnap = await getDoc(analyticsRef);
-
-                if (analyticsSnap.exists()) {
-                    const data = analyticsSnap.data();
-                    document.getElementById('stats-total-visits').textContent = data.totalVisits || 0;
-                    const avgTime = (data.sessionCount > 0) ? (data.totalSessionTime / data.sessionCount).toFixed(1) : 0;
-                    document.getElementById('stats-avg-time').textContent = avgTime;
-
-                    const allTimestamps = data.visitTimestamps && Array.isArray(data.visitTimestamps) 
-                        ? data.visitTimestamps.map(ts => ts.toDate ? ts.toDate() : new Date(ts.seconds * 1000)) 
-                        : [];
-                    
-                    renderCharts(allTimestamps);
-                }
-            }
-
-            function renderCharts(timestamps) {
-                if (!timestamps || timestamps.length === 0) return;
-                
-                const dailyData = timestamps.reduce((acc, ts) => {
-                    const day = new Date(ts.getFullYear(), ts.getMonth(), ts.getDate()).toISOString().split('T')[0];
-                    acc[day] = (acc[day] || 0) + 1;
-                    return acc;
-                }, {});
-
-                const monthlyData = timestamps.reduce((acc, ts) => {
-                    const month = `${ts.getFullYear()}-${String(ts.getMonth() + 1).padStart(2, '0')}`;
-                    acc[month] = (acc[month] || 0) + 1;
-                    return acc;
-                }, {});
-
-                const dailyLabels = Object.keys(dailyData).sort();
-                const dailyCounts = dailyLabels.map(label => dailyData[label]);
-                
-                const monthlyLabels = Object.keys(monthlyData).sort();
-                const monthlyCounts = monthlyLabels.map(label => monthlyData[label]);
-
-                if (visitsByDayChart) visitsByDayChart.destroy();
-                visitsByDayChart = new Chart(document.getElementById('visitsByDayChart').getContext('2d'), {
-                    type: 'bar',
-                    data: { labels: dailyLabels, datasets: [{ label: 'Visitas', data: dailyCounts, backgroundColor: 'rgba(20, 184, 166, 0.5)' }] },
-                    options: { responsive: true, maintainAspectRatio: false, scales: { x: { type: 'time', time: { unit: 'day' } } } }
                 });
-
-                if (visitsByMonthChart) visitsByMonthChart.destroy();
-                visitsByMonthChart = new Chart(document.getElementById('visitsByMonthChart').getContext('2d'), {
-                    type: 'line',
-                    data: { labels: monthlyLabels, datasets: [{ label: 'Visitas', data: monthlyCounts, borderColor: 'rgba(139, 92, 246, 1)', tension: 0.1 }] },
-                     options: { responsive: true, maintainAspectRatio: false }
-                });
-            }
-
-            const model = "gemini-2.5-flash-preview-05-20";
-
-            async function callGemini(prompt, useGrounding = false, retries = 3, delay = 1000) {
-                if (!apiKey) {
-                    throw new Error("API key is missing.");
-                }
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-                
-                const payload = { contents: [{ parts: [{ text: prompt }] }] };
-
-                if (useGrounding) {
-                    payload.tools = [{ "google_search": {} }];
-                }
-
-                try {
-                    const response = await fetch(apiUrl, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-
-                    if (!response.ok) {
-                        if (response.status === 429 && retries > 0) {
-                            await new Promise(res => setTimeout(res, delay));
-                            return callGemini(prompt, useGrounding, retries - 1, delay * 2);
-                        }
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-
-                    const result = await response.json();
-                    return result;
-
-                } catch (error) {
-                    console.error("Error calling Gemini API:", error);
-                    throw error;
-                }
-            }
-            
-            function handleApiError(error, container) {
-                if (error.message.includes('401') || error.message.includes('API key not valid')) {
-                    container.innerHTML = `<p class="text-red-600 font-bold">Error 401: Clave de API no válida o ausente. Asegúrate de haberla pegado correctamente en la variable 'apiKey' del código.</p>`;
-                } else if (error.message.includes('403')) {
-                     container.innerHTML = `<p class="text-red-600 font-bold">Error 403: Permiso denegado. Asegúrate de haber habilitado la "Vertex AI API" en tu proyecto de Google Cloud.</p>`;
-                } else if (error.message.includes('API key is missing')) {
-                    container.innerHTML = `<p class="text-red-600 font-bold">Error: Falta la clave de API. Por favor, configúrala en el código para usar las funciones de IA.</p>`;
-                } else {
-                    container.innerHTML = `<p class="text-red-600 font-bold">Ocurrió un error al contactar la IA. Inténtalo de nuevo.</p>`;
-                }
-            }
-
-            // --- Event Listeners for Practice Sections ---
-            document.querySelectorAll('.gemini-example-btn').forEach(button => {
-                button.addEventListener('click', async (event) => {
-                    const btn = event.currentTarget;
-                    const resultContainer = btn.nextElementSibling;
-                    const checkBlock = resultContainer.nextElementSibling;
-                    const solutionBlock = checkBlock.nextElementSibling;
-
-                    checkBlock.classList.add('hidden');
-                    solutionBlock.classList.add('hidden');
-                    solutionBlock.querySelector('.gemini-solve-result-container').innerHTML = '';
-                    solutionBlock.querySelector('.gemini-solve-result-container').classList.add('hidden');
-                    resultContainer.dataset.problem = '';
-                    resultContainer.innerHTML = '<div class="loader"></div>';
-                    btn.disabled = true;
-
+    
+                const registerBtn = document.getElementById('register-button');
+                registerBtn.addEventListener('click', async () => {
+                    const email = document.getElementById('register-email').value;
+                    const password = document.getElementById('register-password').value;
+                    const errorP = document.getElementById('register-error');
+                    errorP.textContent = '';
+    
                     try {
-                        const result = await callGemini(btn.dataset.prompt);
-                        if (result && result.candidates?.[0]?.content?.parts?.[0]?.text) {
-                            const text = result.candidates[0].content.parts[0].text;
-                            resultContainer.innerHTML = `<div class="font-semibold">${text.trim()}</div>`;
-                            resultContainer.dataset.problem = text.trim();
-                            renderMath(resultContainer);
-                            checkBlock.classList.remove('hidden');
-                            solutionBlock.classList.remove('hidden');
+                        // Check if user is the first ever, or is invited
+                        const usersCol = collection(db, "users");
+                        const adminQuery = query(usersCol, where("role", "in", ["superAdmin"]));
+                        const adminSnapshot = await getDocs(adminQuery);
+                        let role = 'admin'; // Default role for invited user
+                        let isFirstAdmin = adminSnapshot.empty;
+                        
+                        if (isFirstAdmin) {
+                            role = 'superAdmin';
                         } else {
-                            resultContainer.innerHTML = `<p class="text-red-500">La IA no devolvió un ejemplo. Inténtalo de nuevo.</p>`;
+                            const invitationsCol = collection(db, "invitations");
+                            const inviteQuery = query(invitationsCol, where("email", "==", email));
+                            const inviteSnapshot = await getDocs(inviteQuery);
+                            if (inviteSnapshot.empty) {
+                                throw new Error("auth/no-invitation");
+                            }
                         }
+    
+                        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                        const user = userCredential.user;
+    
+                        // Create user document
+                        await setDoc(doc(db, "users", user.uid), {
+                            email: user.email,
+                            role: role,
+                            createdAt: serverTimestamp()
+                        });
+    
+                        // Delete invitation if it exists
+                        if (!isFirstAdmin) {
+                            const invitationsCol = collection(db, "invitations");
+                            const inviteQuery = query(invitationsCol, where("email", "==", email));
+                            const inviteSnapshot = await getDocs(inviteQuery);
+                            inviteSnapshot.forEach(async (inviteDoc) => {
+                                await deleteDoc(doc(db, "invitations", inviteDoc.id));
+                            });
+                        }
+    
                     } catch (error) {
-                        handleApiError(error, resultContainer);
-                    } finally {
-                        btn.disabled = false;
+                         if(error.message === "auth/no-invitation") {
+                            errorP.textContent = "Error: No tienes una invitación para registrarte.";
+                        } else {
+                            errorP.textContent = "Error: " + error.message;
+                        }
                     }
                 });
-            });
-
-            document.querySelectorAll('.gemini-check-btn').forEach(button => {
-                button.addEventListener('click', async (event) => {
-                    const btn = event.currentTarget;
-                    const resultContainer = btn.closest('.check-answer-block').querySelector('.gemini-check-result-container');
-                    const userAnswer = btn.previousElementSibling.value.trim();
-                    const problem = btn.closest('.content-section').querySelector('.gemini-result-container').dataset.problem;
-
-                    if (!userAnswer) {
-                        resultContainer.innerHTML = `<p class="text-orange-600 font-semibold">Por favor, introduce tu respuesta.</p>`;
+                
+                const logoutBtn = document.getElementById('logout-button');
+                logoutBtn.addEventListener('click', async () => {
+                    await signOut(auth);
+                });
+    
+                 const addAdminBtn = document.getElementById('add-admin-button');
+                 addAdminBtn.addEventListener('click', async () => {
+                    const email = document.getElementById('new-admin-email').value;
+                    const feedbackP = document.getElementById('add-admin-feedback');
+                    if(!email) {
+                        feedbackP.textContent = 'Por favor, introduce un email.';
+                        feedbackP.className = 'text-sm mt-2 text-red-500';
                         return;
                     }
-
-                    resultContainer.innerHTML = '<div class="loader" style="margin: 0 auto;"></div>';
-                    btn.disabled = true;
-
-                    const checkPrompt = `La ecuación diferencial es: ${problem}. Un usuario ha propuesto la siguiente solución: ${userAnswer}. ¿Es esta solución correcta? Responde 'Correcto.' o 'Incorrecto.' en la primera línea. Luego, en una nueva línea, da una explicación muy breve y simple del porqué, sin revelar la solución completa si es incorrecta.`;
                     
                     try {
-                        const result = await callGemini(checkPrompt);
-                        if (result && result.candidates?.[0]?.content?.parts?.[0]?.text) {
-                            const text = result.candidates[0].content.parts[0].text;
-                            if (text.toLowerCase().startsWith('correcto')) {
-                                resultContainer.innerHTML = `<p class="text-green-600 font-bold">¡Correcto! 🎉</p><p class="text-sm mt-1">${text.substring(text.indexOf('.') + 1).trim()}</p>`;
-                            } else {
-                                resultContainer.innerHTML = `<p class="text-red-600 font-bold">Incorrecto.</p><p class="text-sm mt-1">${text.substring(text.indexOf('.') + 1).trim()}</p>`;
-                            }
-                        } else {
-                            resultContainer.innerHTML = `<p class="text-red-500">No se pudo verificar la respuesta.</p>`;
-                        }
-                    } catch (error) {
-                        handleApiError(error, resultContainer);
-                    } finally {
-                        btn.disabled = false;
+                        await setDoc(doc(collection(db, "invitations")), {
+                            email: email,
+                            role: 'admin',
+                            invitedBy: auth.currentUser.uid,
+                            createdAt: serverTimestamp()
+                        });
+                        feedbackP.textContent = `Invitación enviada a ${email}. Ahora pueden registrarse.`;
+                        feedbackP.className = 'text-sm mt-2 text-green-600';
+                        document.getElementById('new-admin-email').value = '';
+                    } catch (e) {
+                        feedbackP.textContent = 'Error al enviar la invitación.';
+                        feedbackP.className = 'text-sm mt-2 text-red-500';
+                        console.error("Error adding invitation: ", e);
                     }
-                });
-            });
-
-            document.querySelectorAll('.gemini-solve-btn').forEach(button => {
-                button.addEventListener('click', async (event) => {
-                    const btn = event.currentTarget;
-                    const solveResultContainer = btn.nextElementSibling;
-                    const problem = btn.closest('.content-section').querySelector('.gemini-result-container').dataset.problem;
-                    const methodName = btn.closest('.content-section').dataset.methodName;
-
-                    solveResultContainer.classList.toggle('hidden');
-                    
-                    if (!solveResultContainer.classList.contains('hidden') && solveResultContainer.innerHTML.trim() === '') {
-                        solveResultContainer.innerHTML = '<div class="loader"></div>';
-                        btn.disabled = true;
-
-                        const solvePrompt = `Resuelve la siguiente ecuación diferencial de primer orden paso a paso, explicando cada parte del proceso. La ecuación es: ${problem}. El método a usar es el de Ecuaciones ${methodName}. Formatea la solución con encabezados claros para cada paso y usa delimitadores de $$ para todas las expresiones matemáticas.`;
+                 });
+    
+                // --- Dashboard Logic ---
+                async function loadDashboardData() {
+                    const analyticsRef = doc(db, "analytics", "main");
+                    const analyticsSnap = await getDoc(analyticsRef);
+    
+                    if (analyticsSnap.exists()) {
+                        const data = analyticsSnap.data();
+                        document.getElementById('stats-total-visits').textContent = data.totalVisits || 0;
+                        const avgTime = (data.sessionCount > 0) ? (data.totalSessionTime / data.sessionCount).toFixed(1) : 0;
+                        document.getElementById('stats-avg-time').textContent = avgTime;
+    
+                        const allTimestamps = data.visitTimestamps && Array.isArray(data.visitTimestamps) 
+                            ? data.visitTimestamps.map(ts => ts.toDate ? ts.toDate() : new Date(ts.seconds * 1000)) 
+                            : [];
                         
+                        renderCharts(allTimestamps);
+                    }
+                }
+    
+                function renderCharts(timestamps) {
+                    if (!timestamps || timestamps.length === 0) return;
+                    
+                    const dailyData = timestamps.reduce((acc, ts) => {
+                        const day = new Date(ts.getFullYear(), ts.getMonth(), ts.getDate()).toISOString().split('T')[0];
+                        acc[day] = (acc[day] || 0) + 1;
+                        return acc;
+                    }, {});
+    
+                    const monthlyData = timestamps.reduce((acc, ts) => {
+                        const month = `${ts.getFullYear()}-${String(ts.getMonth() + 1).padStart(2, '0')}`;
+                        acc[month] = (acc[month] || 0) + 1;
+                        return acc;
+                    }, {});
+    
+                    const dailyLabels = Object.keys(dailyData).sort();
+                    const dailyCounts = dailyLabels.map(label => dailyData[label]);
+                    
+                    const monthlyLabels = Object.keys(monthlyData).sort();
+                    const monthlyCounts = monthlyLabels.map(label => monthlyData[label]);
+    
+                    if (visitsByDayChart) visitsByDayChart.destroy();
+                    visitsByDayChart = new Chart(document.getElementById('visitsByDayChart').getContext('2d'), {
+                        type: 'bar',
+                        data: { labels: dailyLabels, datasets: [{ label: 'Visitas', data: dailyCounts, backgroundColor: 'rgba(20, 184, 166, 0.5)' }] },
+                        options: { responsive: true, maintainAspectRatio: false, scales: { x: { type: 'time', time: { unit: 'day' } } } }
+                    });
+    
+                    if (visitsByMonthChart) visitsByMonthChart.destroy();
+                    visitsByMonthChart = new Chart(document.getElementById('visitsByMonthChart').getContext('2d'), {
+                        type: 'line',
+                        data: { labels: monthlyLabels, datasets: [{ label: 'Visitas', data: monthlyCounts, borderColor: 'rgba(139, 92, 246, 1)', tension: 0.1 }] },
+                         options: { responsive: true, maintainAspectRatio: false }
+                    });
+                }
+    
+                const model = "gemini-2.5-flash-preview-05-20";
+    
+                async function callGemini(prompt, useGrounding = false, retries = 3, delay = 1000) {
+                    if (!apiKey) {
+                        throw new Error("API key is missing.");
+                    }
+                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+                    
+                    const payload = { contents: [{ parts: [{ text: prompt }] }] };
+    
+                    if (useGrounding) {
+                        payload.tools = [{ "google_search": {} }];
+                    }
+    
+                    try {
+                        const response = await fetch(apiUrl, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+    
+                        if (!response.ok) {
+                            if (response.status === 429 && retries > 0) {
+                                await new Promise(res => setTimeout(res, delay));
+                                return callGemini(prompt, useGrounding, retries - 1, delay * 2);
+                            }
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+    
+                        const result = await response.json();
+                        return result;
+    
+                    } catch (error) {
+                        console.error("Error calling Gemini API:", error);
+                        throw error;
+                    }
+                }
+                
+                function handleApiError(error, container) {
+                    if (error.message.includes('401') || error.message.includes('API key not valid')) {
+                        container.innerHTML = `<p class="text-red-600 font-bold">Error 401: Clave de API no válida o ausente. Asegúrate de haberla pegado correctamente en la variable 'apiKey' del código.</p>`;
+                    } else if (error.message.includes('403')) {
+                         container.innerHTML = `<p class="text-red-600 font-bold">Error 403: Permiso denegado. Asegúrate de haber habilitado la "Vertex AI API" en tu proyecto de Google Cloud.</p>`;
+                    } else if (error.message.includes('API key is missing')) {
+                        container.innerHTML = `<p class="text-red-600 font-bold">Error: Falta la clave de API. Por favor, configúrala en el código para usar las funciones de IA.</p>`;
+                    } else {
+                        container.innerHTML = `<p class="text-red-600 font-bold">Ocurrió un error al contactar la IA. Inténtalo de nuevo.</p>`;
+                    }
+                }
+    
+                // --- Event Listeners for Practice Sections ---
+                document.querySelectorAll('.gemini-example-btn').forEach(button => {
+                    button.addEventListener('click', async (event) => {
+                        const btn = event.currentTarget;
+                        const resultContainer = btn.nextElementSibling;
+                        const checkBlock = resultContainer.nextElementSibling;
+                        const solutionBlock = checkBlock.nextElementSibling;
+    
+                        checkBlock.classList.add('hidden');
+                        solutionBlock.classList.add('hidden');
+                        solutionBlock.querySelector('.gemini-solve-result-container').innerHTML = '';
+                        solutionBlock.querySelector('.gemini-solve-result-container').classList.add('hidden');
+                        resultContainer.dataset.problem = '';
+                        resultContainer.innerHTML = '<div class="loader"></div>';
+                        btn.disabled = true;
+    
                         try {
-                            const result = await callGemini(solvePrompt);
+                            const result = await callGemini(btn.dataset.prompt);
                             if (result && result.candidates?.[0]?.content?.parts?.[0]?.text) {
-                                solveResultContainer.innerHTML = result.candidates[0].content.parts[0].text.replace(/\n/g, '<br>');
-                                renderMath(solveResultContainer);
+                                const text = result.candidates[0].content.parts[0].text;
+                                resultContainer.innerHTML = `<div class="font-semibold">${text.trim()}</div>`;
+                                resultContainer.dataset.problem = text.trim();
+                                renderMath(resultContainer);
+                                checkBlock.classList.remove('hidden');
+                                solutionBlock.classList.remove('hidden');
                             } else {
-                                 solveResultContainer.innerHTML = `<p class="text-red-500">No se pudo generar la solución.</p>`;
+                                resultContainer.innerHTML = `<p class="text-red-500">La IA no devolvió un ejemplo. Inténtalo de nuevo.</p>`;
                             }
                         } catch (error) {
-                            handleApiError(error, solveResultContainer);
+                            handleApiError(error, resultContainer);
                         } finally {
                             btn.disabled = false;
                         }
+                    });
+                });
+    
+                document.querySelectorAll('.gemini-check-btn').forEach(button => {
+                    button.addEventListener('click', async (event) => {
+                        const btn = event.currentTarget;
+                        const resultContainer = btn.closest('.check-answer-block').querySelector('.gemini-check-result-container');
+                        const userAnswer = btn.previousElementSibling.value.trim();
+                        const problem = btn.closest('.content-section').querySelector('.gemini-result-container').dataset.problem;
+    
+                        if (!userAnswer) {
+                            resultContainer.innerHTML = `<p class="text-orange-600 font-semibold">Por favor, introduce tu respuesta.</p>`;
+                            return;
+                        }
+    
+                        resultContainer.innerHTML = '<div class="loader" style="margin: 0 auto;"></div>';
+                        btn.disabled = true;
+    
+                        const checkPrompt = `La ecuación diferencial es: ${problem}. Un usuario ha propuesto la siguiente solución: ${userAnswer}. ¿Es esta solución correcta? Responde 'Correcto.' o 'Incorrecto.' en la primera línea. Luego, en una nueva línea, da una explicación muy breve y simple del porqué, sin revelar la solución completa si es incorrecta.`;
+                        
+                        try {
+                            const result = await callGemini(checkPrompt);
+                            if (result && result.candidates?.[0]?.content?.parts?.[0]?.text) {
+                                const text = result.candidates[0].content.parts[0].text;
+                                if (text.toLowerCase().startsWith('correcto')) {
+                                    resultContainer.innerHTML = `<p class="text-green-600 font-bold">¡Correcto! 🎉</p><p class="text-sm mt-1">${text.substring(text.indexOf('.') + 1).trim()}</p>`;
+                                } else {
+                                    resultContainer.innerHTML = `<p class="text-red-600 font-bold">Incorrecto.</p><p class="text-sm mt-1">${text.substring(text.indexOf('.') + 1).trim()}</p>`;
+                                }
+                            } else {
+                                resultContainer.innerHTML = `<p class="text-red-500">No se pudo verificar la respuesta.</p>`;
+                            }
+                        } catch (error) {
+                            handleApiError(error, resultContainer);
+                        } finally {
+                            btn.disabled = false;
+                        }
+                    });
+                });
+    
+                document.querySelectorAll('.gemini-solve-btn').forEach(button => {
+                    button.addEventListener('click', async (event) => {
+                        const btn = event.currentTarget;
+                        const solveResultContainer = btn.nextElementSibling;
+                        const problem = btn.closest('.content-section').querySelector('.gemini-result-container').dataset.problem;
+                        const methodName = btn.closest('.content-section').dataset.methodName;
+    
+                        solveResultContainer.classList.toggle('hidden');
+                        
+                        if (!solveResultContainer.classList.contains('hidden') && solveResultContainer.innerHTML.trim() === '') {
+                            solveResultContainer.innerHTML = '<div class="loader"></div>';
+                            btn.disabled = true;
+    
+                            const solvePrompt = `Resuelve la siguiente ecuación diferencial de primer orden paso a paso, explicando cada parte del proceso. La ecuación es: ${problem}. El método a usar es el de Ecuaciones ${methodName}. Formatea la solución con encabezados claros para cada paso y usa delimitadores de $$ para todas las expresiones matemáticas.`;
+                            
+                            try {
+                                const result = await callGemini(solvePrompt);
+                                if (result && result.candidates?.[0]?.content?.parts?.[0]?.text) {
+                                    solveResultContainer.innerHTML = result.candidates[0].content.parts[0].text.replace(/\n/g, '<br>');
+                                    renderMath(solveResultContainer);
+                                } else {
+                                     solveResultContainer.innerHTML = `<p class="text-red-500">No se pudo generar la solución.</p>`;
+                                }
+                            } catch (error) {
+                                handleApiError(error, solveResultContainer);
+                            } finally {
+                                btn.disabled = false;
+                            }
+                        }
+                    });
+                });
+    
+                // --- Event Listener for Custom Solver ---
+                document.getElementById('analyze-custom-eq-btn').addEventListener('click', async () => {
+                    const btn = document.getElementById('analyze-custom-eq-btn');
+                    const equation = document.getElementById('custom-eq-input').value.trim();
+                    const recommendationContainer = document.getElementById('custom-eq-recommendation-container');
+                    const solverBlock = document.getElementById('custom-solver-block');
+    
+                    if (!equation) {
+                        recommendationContainer.innerHTML = `<p class="text-orange-600 font-semibold">Por favor, introduce una ecuación.</p>`;
+                        return;
+                    }
+    
+                    recommendationContainer.innerHTML = '<div class="loader"></div>';
+                    solverBlock.classList.add('hidden');
+                    btn.disabled = true;
+    
+                    const methodList = Object.values(contentData).map(m => m.name).join(', ');
+                    const prompt = `Analiza la ecuación diferencial de primer orden: "${equation}". Identifica el método más eficiente para resolverla de la siguiente lista: ${methodList}. En la primera línea, escribe solo el nombre del método recomendado (ej: "Variables Separables"). En una nueva línea, escribe una explicación concisa del porqué.`;
+    
+                    try {
+                        const result = await callGemini(prompt);
+                        if (result && result.candidates?.[0]?.content?.parts?.[0]?.text) {
+                            const text = result.candidates[0].content.parts[0].text.trim();
+                            const lines = text.split('\n');
+                            const recommendedMethod = lines[0].trim();
+                            const reason = lines.slice(1).join(' ').trim();
+                            
+                            recommendationContainer.innerHTML = `
+                                <p><span class="font-bold">Método Recomendado:</span> <span class="text-teal-700 font-semibold">${recommendedMethod}</span></p>
+                                <p class="mt-2"><span class="font-bold">Razón:</span> ${reason}</p>
+                            `;
+    
+                            // Pre-select the recommended method in the dropdown
+                            const select = document.getElementById('custom-method-select');
+                            const optionToSelect = Array.from(select.options).find(opt => recommendedMethod.includes(opt.text));
+                            if(optionToSelect) {
+                                select.value = optionToSelect.value;
+                            }
+    
+                            solverBlock.classList.remove('hidden');
+    
+                        } else {
+                            recommendationContainer.innerHTML = `<p class="text-red-500">No se pudo analizar la ecuación.</p>`;
+                        }
+                    } catch(error) {
+                        handleApiError(error, recommendationContainer);
+                    } finally {
+                        btn.disabled = false;
                     }
                 });
-            });
-
-            // --- Event Listener for Custom Solver ---
-            document.getElementById('analyze-custom-eq-btn').addEventListener('click', async () => {
-                const btn = document.getElementById('analyze-custom-eq-btn');
-                const equation = document.getElementById('custom-eq-input').value.trim();
-                const recommendationContainer = document.getElementById('custom-eq-recommendation-container');
-                const solverBlock = document.getElementById('custom-solver-block');
-
-                if (!equation) {
-                    recommendationContainer.innerHTML = `<p class="text-orange-600 font-semibold">Por favor, introduce una ecuación.</p>`;
-                    return;
-                }
-
-                recommendationContainer.innerHTML = '<div class="loader"></div>';
-                solverBlock.classList.add('hidden');
-                btn.disabled = true;
-
-                const methodList = Object.values(contentData).map(m => m.name).join(', ');
-                const prompt = `Analiza la ecuación diferencial de primer orden: "${equation}". Identifica el método más eficiente para resolverla de la siguiente lista: ${methodList}. En la primera línea, escribe solo el nombre del método recomendado (ej: "Variables Separables"). En una nueva línea, escribe una explicación concisa del porqué.`;
-
-                try {
-                    const result = await callGemini(prompt);
-                    if (result && result.candidates?.[0]?.content?.parts?.[0]?.text) {
-                        const text = result.candidates[0].content.parts[0].text.trim();
-                        const lines = text.split('\n');
-                        const recommendedMethod = lines[0].trim();
-                        const reason = lines.slice(1).join(' ').trim();
-                        
-                        recommendationContainer.innerHTML = `
-                            <p><span class="font-bold">Método Recomendado:</span> <span class="text-teal-700 font-semibold">${recommendedMethod}</span></p>
-                            <p class="mt-2"><span class="font-bold">Razón:</span> ${reason}</p>
-                        `;
-
-                        // Pre-select the recommended method in the dropdown
-                        const select = document.getElementById('custom-method-select');
-                        const optionToSelect = Array.from(select.options).find(opt => recommendedMethod.includes(opt.text));
-                        if(optionToSelect) {
-                            select.value = optionToSelect.value;
+    
+                document.getElementById('solve-custom-eq-btn').addEventListener('click', async () => {
+                     const btn = document.getElementById('solve-custom-eq-btn');
+                    const equation = document.getElementById('custom-eq-input').value.trim();
+                    const method = document.getElementById('custom-method-select').value;
+                    const resultContainer = document.getElementById('custom-eq-result-container');
+    
+                    resultContainer.innerHTML = '<div class="loader"></div>';
+                    btn.disabled = true;
+    
+                    const prompt = `Resuelve la siguiente ecuación diferencial: "${equation}" utilizando el método de Ecuaciones ${method}. Muestra todos los pasos de manera clara, explicando el procedimiento. Formatea la respuesta con encabezados para cada paso y usa delimitadores de $$ para todas las expresiones matemáticas.`;
+                    
+                    try {
+                        const result = await callGemini(prompt);
+                        if (result && result.candidates?.[0]?.content?.parts?.[0]?.text) {
+                            resultContainer.innerHTML = result.candidates[0].content.parts[0].text.replace(/\n/g, '<br>');
+                            renderMath(resultContainer);
+                        } else {
+                            resultContainer.innerHTML = `<p class="text-red-500">No se pudo resolver la ecuación. Verifica que esté bien escrita o prueba con otro método.</p>`;
                         }
-
-                        solverBlock.classList.remove('hidden');
-
-                    } else {
-                        recommendationContainer.innerHTML = `<p class="text-red-500">No se pudo analizar la ecuación.</p>`;
+                    } catch(error) {
+                        handleApiError(error, resultContainer);
+                    } finally {
+                        btn.disabled = false;
                     }
-                } catch(error) {
-                    handleApiError(error, recommendationContainer);
-                } finally {
-                    btn.disabled = false;
-                }
-            });
-
-            document.getElementById('solve-custom-eq-btn').addEventListener('click', async () => {
-                 const btn = document.getElementById('solve-custom-eq-btn');
-                const equation = document.getElementById('custom-eq-input').value.trim();
-                const method = document.getElementById('custom-method-select').value;
-                const resultContainer = document.getElementById('custom-eq-result-container');
-
-                resultContainer.innerHTML = '<div class="loader"></div>';
-                btn.disabled = true;
-
-                const prompt = `Resuelve la siguiente ecuación diferencial: "${equation}" utilizando el método de Ecuaciones ${method}. Muestra todos los pasos de manera clara, explicando el procedimiento. Formatea la respuesta con encabezados para cada paso y usa delimitadores de $$ para todas las expresiones matemáticas.`;
+                });
                 
-                try {
-                    const result = await callGemini(prompt);
-                    if (result && result.candidates?.[0]?.content?.parts?.[0]?.text) {
-                        resultContainer.innerHTML = result.candidates[0].content.parts[0].text.replace(/\n/g, '<br>');
-                        renderMath(resultContainer);
-                    } else {
-                        resultContainer.innerHTML = `<p class="text-red-500">No se pudo resolver la ecuación. Verifica que esté bien escrita o prueba con otro método.</p>`;
+                // --- Event Listener for Applications Finder ---
+                document.getElementById('gemini-app-btn').addEventListener('click', async () => {
+                    const btn = document.getElementById('gemini-app-btn');
+                    const query = document.getElementById('app-query-input').value.trim();
+                    if (!query) {
+                        alert("Por favor, introduce un campo de estudio.");
+                        return;
                     }
-                } catch(error) {
-                    handleApiError(error, resultContainer);
-                } finally {
-                    btn.disabled = false;
-                }
-            });
-            
-            // --- Event Listener for Applications Finder ---
-            document.getElementById('gemini-app-btn').addEventListener('click', async () => {
-                const btn = document.getElementById('gemini-app-btn');
-                const query = document.getElementById('app-query-input').value.trim();
-                if (!query) {
-                    alert("Por favor, introduce un campo de estudio.");
-                    return;
-                }
-                
-                const resultContainer = document.getElementById('gemini-app-result-container');
-                resultContainer.innerHTML = '<div class="loader"></div>';
-                btn.disabled = true;
-                
-                const prompt = `Busca y explica brevemente una aplicación del mundo real de las ecuaciones diferenciales de primer orden en el campo de "${query}". Describe el escenario, la ecuación que lo modela y qué representa.`;
-                
-                try {
-                    const result = await callGemini(prompt, true);
-                    if (result && result.candidates?.[0]?.content?.parts?.[0]?.text) {
-                        let html = `<p>${result.candidates[0].content.parts[0].text.replace(/\n/g, '<br>')}</p>`;
-                        
-                        const groundingMetadata = result.candidates[0]?.groundingMetadata;
-                        if (groundingMetadata?.groundingAttributions?.length > 0) {
-                            html += `<h4 class="font-semibold mt-4 mb-2">Fuentes:</h4><ul class="list-disc list-inside text-sm">`;
-                            groundingMetadata.groundingAttributions.forEach(attr => {
-                                if (attr.web?.uri) {
-                                    html += `<li><a href="${attr.web.uri}" target="_blank" class="text-teal-600 hover:underline">${attr.web.title || attr.web.uri}</a></li>`;
-                                }
-                            });
-                            html += `</ul>`;
+                    
+                    const resultContainer = document.getElementById('gemini-app-result-container');
+                    resultContainer.innerHTML = '<div class="loader"></div>';
+                    btn.disabled = true;
+                    
+                    const prompt = `Busca y explica brevemente una aplicación del mundo real de las ecuaciones diferenciales de primer orden en el campo de "${query}". Describe el escenario, la ecuación que lo modela y qué representa.`;
+                    
+                    try {
+                        const result = await callGemini(prompt, true);
+                        if (result && result.candidates?.[0]?.content?.parts?.[0]?.text) {
+                            let html = `<p>${result.candidates[0].content.parts[0].text.replace(/\n/g, '<br>')}</p>`;
+                            
+                            const groundingMetadata = result.candidates[0]?.groundingMetadata;
+                            if (groundingMetadata?.groundingAttributions?.length > 0) {
+                                html += `<h4 class="font-semibold mt-4 mb-2">Fuentes:</h4><ul class="list-disc list-inside text-sm">`;
+                                groundingMetadata.groundingAttributions.forEach(attr => {
+                                    if (attr.web?.uri) {
+                                        html += `<li><a href="${attr.web.uri}" target="_blank" class="text-teal-600 hover:underline">${attr.web.title || attr.web.uri}</a></li>`;
+                                    }
+                                });
+                                html += `</ul>`;
+                            }
+                            resultContainer.innerHTML = html;
+                            renderMath(resultContainer);
+                        } else {
+                            resultContainer.innerHTML = `<p class="text-red-500">No se pudo encontrar una aplicación. Intenta con otro término.</p>`;
                         }
-                        resultContainer.innerHTML = html;
-                        renderMath(resultContainer);
-                    } else {
-                        resultContainer.innerHTML = `<p class="text-red-500">No se pudo encontrar una aplicación. Intenta con otro término.</p>`;
+                    } catch(error) {
+                        handleApiError(error, resultContainer);
+                    } finally {
+                        btn.disabled = false;
                     }
-                } catch(error) {
-                    handleApiError(error, resultContainer);
-                } finally {
-                    btn.disabled = false;
-                }
-            });
-
-            mainApp();
-    });
+                });
+    
+                mainApp();
+        });
     </script>
 </body>
 </html>
-
 
